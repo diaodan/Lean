@@ -1,0 +1,6 @@
+cloud_deb="cloud-qemu cloud-libvirt cloud-libusb lssa vmc rfp pmm virtio-win"
+require_deb="libyajl2 libpixman-1-0 libglib2.0-0 libpciaccess0 ebtables vim openssh-server"
+distrib_id="DISTRIB_ID=Ubuntu"
+grub_pic="ubuntuMetal2.png"
+
+

@@ -1,0 +1,13 @@
+安装rsync, createrepo, genisoimg工具包。
+将要加入iso中的rpm包放入rpm目录下。
+将源CentOS-7-x86_64-DVD-1708.iso文件复制到当前目录。
+修改centos_comps.xml文件<group> id为Hyper-converged-cloud的
+<packagelist>部分，将要安装的rpm包名按照下列各式添加到
+<packagelist>中:
+    <packagereq type="mandatory">rpm-name</packagelist>
+
+rpm name使用rpm -qi查寻Name。
+
+最后，在当前目录下运行build.sh脚本,运行完成后，在当前目录下
+会生成一个CentOS-7-x86_64-DVD-1708-time.iso
+time是当前的时间.

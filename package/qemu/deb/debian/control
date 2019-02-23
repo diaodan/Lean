@@ -1,0 +1,17 @@
+Source: __PACK_NAME__
+Section: non-free/utils
+Priority: optional
+Maintainer: __PACK_AUTHOR__ <__PACK_AUTHOR_EMAIL__>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.2
+Homepage: __PACK_URL__
+
+Package: __PACK_NAME__
+Architecture: any
+Depends:
+Description: __PACK_COMPANY__ __PACK_NAME__ Library
+ -=======================================================-
+  This package contains the __PACK_COMPANY__ __PACK_NAME__ Library.
+  Version:        __version__
+  Build Date:     __builddate__
+ -=======================================================-

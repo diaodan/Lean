@@ -1,0 +1,5 @@
+__PACK_NAME__ (__pack_version__) unstable; urgency=low
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- __PACK_AUTHOR__ <__PACK_AUTHOR_EMAIL__>  Fri, 09 Nov 2012 14:48:55 +0800

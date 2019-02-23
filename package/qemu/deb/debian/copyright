@@ -1,0 +1,11 @@
+Format: http://dep.debian.net/deps/dep5
+Upstream-Name: __PACK_NAME__
+Source: __PACK_URL__
+
+Files: __PACK_NAME__/*
+Copyright: 2017- __PACK_VENDOR__
+License: Commercial
+
+Files: debian/*
+Copyright: 2017- __PACK_VENDOR__
+License: Commercial
