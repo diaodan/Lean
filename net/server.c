@@ -32,6 +32,13 @@ int main(int argc, char **argv)
     serveraddr.sin_port = htons(port);
     serveraddr.sin_addr.s_addr = htonl(0);
 
+    int sock_opt = 1;
+    ret = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (void *)&sock_opt, sizeof(sock_opt));
+    if (ret < 0) {
+        printf("setsocketopt SO_REUSEADDR failed %s\n", strerror(errno));
+        goto err;
+    }
+
     ret = bind(sockfd, (struct sockaddr *)&serveraddr, sizeof(serveraddr));
     if (ret < 0) {
         printf("bind failed\n");
@@ -48,6 +55,7 @@ int main(int argc, char **argv)
 
     shutdown(clientfd, SHUT_RD);
     shutdown(clientfd, SHUT_RDWR);
+    close(clientfd);
 
 err:
     close(sockfd);

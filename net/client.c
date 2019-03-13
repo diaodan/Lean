@@ -41,7 +41,8 @@ int main(int argc, char **argv)
         printf("connect failed %s\n", strerror(errno));
         goto err;
     }
-
+    
+    shutdown(sockfd, SHUT_WR);
     
 
 err:
