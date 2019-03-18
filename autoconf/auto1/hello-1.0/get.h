@@ -2,4 +2,4 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-int get(int *x, int *y);
+extern int get(int *x, int *y);
