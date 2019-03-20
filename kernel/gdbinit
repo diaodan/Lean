@@ -1,0 +1,6 @@
+set architecture i386:x86-64
+target remote localhost:1234
+set directories /home/cup/build/linux-3.10.1
+b start_kernel
+b devices_init
+
