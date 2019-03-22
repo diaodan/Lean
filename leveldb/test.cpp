@@ -8,6 +8,7 @@
 void writeKey(char *s_key, char *s_value, leveldb::DB *db);
 void AtomicUpdates(char *key1, char *vaule1, char *key2, char *vaule2, leveldb::DB *db);
 void ShowKeyValue(char *key, leveldb::DB *db);
+void ShowDB(leveldb::DB *db);
 
 int main(int argc, char **argv)
 {
@@ -22,9 +23,11 @@ int main(int argc, char **argv)
         printf("level db open failed %s\n", status.ToString().c_str());
     }
 
+    ShowDB(db);
     writeKey((char *)"lilu", (char *)"love wife", db);
     AtomicUpdates((char *)"lilu", NULL, (char *)"xiaopangzi", NULL, db);
     ShowKeyValue((char *)"xiaopangzi", db);
+    ShowDB(db);
 
 
     if (db) {
@@ -89,4 +92,16 @@ void ShowKeyValue(char *key, leveldb::DB *db)
 }
 
 
+void ShowDB(leveldb::DB *db)
+{
+    printf("%s\n", __func__);
+    leveldb::Iterator *it = db->NewIterator(leveldb::ReadOptions());
+
+    for (it->SeekToFirst(); it->Valid(); it->Next()) {
+        printf("Key: %s, vaule: %s\n", it->key().ToString().c_str(),
+                                        it->value().ToString().c_str());
+    }
+    assert(it->status().ok());
+    delete it;
+}
 
