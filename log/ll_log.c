@@ -17,7 +17,7 @@
 int g_log_fd = -1;
 int g_log_level = LL_LOG_DEBUG;
 
-static int ll_log_open(char *log_dir)
+static int ll_log_open(const char *log_dir)
 {
     char *p = NULL;
     char *dir = NULL;

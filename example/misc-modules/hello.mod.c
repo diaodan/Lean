@@ -29,4 +29,10 @@ __attribute__((section(".modinfo"))) =
 
 
 MODULE_INFO(srcversion, "31FE72DA6A560C890FF9B3F");
-MODULE_INFO(rhelversion, "7.4");
+MODULE_INFO(rhelversion, "7.6");
+#ifdef RETPOLINE
+	MODULE_INFO(retpoline, "Y");
+#endif
+#ifdef CONFIG_MPROFILE_KERNEL
+	MODULE_INFO(mprofile, "Y");
+#endif

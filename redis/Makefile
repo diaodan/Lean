@@ -1,6 +1,6 @@
 CC = gcc
 CF = -g
-LIB = /usr/local/lib/libhiredis.a
+LIB = ../../hiredis/libhiredis.a
 
 PRO = client
 all:$(PRO)

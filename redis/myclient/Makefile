@@ -1,8 +1,8 @@
-CC = gcc
+CC = g++
 CF = -g
 LIB = -I../../log/ /usr/local/lib/libhiredis.a
 
-SOURCE=main.c ../../log/ll_log.c net.c
+SOURCE=../../log/ll_log.c net.c main.c
 
 PRO = client
 all:$(PRO)

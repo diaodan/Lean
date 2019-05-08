@@ -1,2 +1,2 @@
-/datapool1/lilu/kernel/examples/misc-modules/hello.ko
-/datapool1/lilu/kernel/examples/misc-modules/hello.o
+/root/git/Learn/example/misc-modules/hello.ko
+/root/git/Learn/example/misc-modules/hello.o
