@@ -70,7 +70,7 @@ static struct scull_qset * scull_follow(struct scull_dev *dev, int n)
             memset(qs->next, 0, sizeof(struct scull_qset));
             if (qs->next->data == NULL) {
                 qs->next->data = kmalloc(sizeof(char *) * dev->qset, GFP_KERNEL);
-                if (qs->next->data) {
+                if (qs->next->data == NULL) {
                     kfree(qs->next);
                     qs->next = NULL;
                     return NULL;
