@@ -1,2 +1,2 @@
-/root/git/Learn/module/chapter2/hello.ko
-/root/git/Learn/module/chapter2/hello.o
+/root/git/Lean/module/chapter2/hello.ko
+/root/git/Lean/module/chapter2/hello.o
