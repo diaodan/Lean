@@ -1,3 +1,6 @@
+
+ccflags-y+=-O -g
+
 ifneq ($(KERNELRELEASE),)
 	obj-m := scull.o
 	scull-objs := main.o
