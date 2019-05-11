@@ -1,5 +1,5 @@
 
-ccflags-y+=-O -g
+EXTRA_CFLAGS=-O -g
 
 ifneq ($(KERNELRELEASE),)
 	obj-m := scull.o
