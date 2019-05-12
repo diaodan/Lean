@@ -29,5 +29,10 @@ int main(int argc, char **argv)
     }
     printf("quantum %d\n", quantum);
 
+    ret = ioctl(fd, SCULL_IOCQQUANTUM, NULL);
+    if (ret < 0) {
+        printf("ioctl failed %s\n", strerror(errno));
+    }
+    printf("quantum %d\n", ret);
     return ret;
 }
