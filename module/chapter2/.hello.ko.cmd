@@ -1,1 +1,1 @@
-cmd_/root/git/Learn/module/chapter2/hello.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /root/git/Learn/module/chapter2/hello.ko /root/git/Learn/module/chapter2/hello.o /root/git/Learn/module/chapter2/hello.mod.o
+cmd_/root/git/Lean/module/chapter2/hello.ko := ld -r -m elf_x86_64 -T /root/linux2/scripts/module-common.lds --build-id  -o /root/git/Lean/module/chapter2/hello.ko /root/git/Lean/module/chapter2/hello.o /root/git/Lean/module/chapter2/hello.mod.o
