@@ -1,10 +1,13 @@
 #include "scull.h"
 
+#define SCULL_QUANTUM   4096
+#define SCULL_QSET      16
+
 int scull_major = 0;
 int scull_nr_devs = 4;
 int scull_minor = 0;
-int scull_quantum = 128;
-int scull_qset = 16;
+int scull_quantum = SCULL_QUANTUM;
+int scull_qset = SCULL_QSET;
 
 MODULE_AUTHOR("LILU");
 MODULE_LICENSE("Dual BSD/GPL");
@@ -208,7 +211,7 @@ ssize_t scull_write(struct file *filp, const char __user *buff, size_t count, lo
     if (dev->size < *f_pos) {
         dev->size = *f_pos;
     }
-    printk(KERN_INFO "write %lu dev size %d\n", count, dev->size);
+    printk(KERN_INFO "write %lu dev size %lu\n", count, dev->size);
 out:
     up(&dev->sem);
     return retval;
@@ -220,6 +223,104 @@ int scull_release(struct inode *inode, struct file *filp)
     return 0;
 }
 
+long scull_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+    printk(KERN_INFO "%s\n", __func__);
+    return 0;
+}
+
+long scull_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+    int err = 0, tmp;
+    int retval = 0;
+    struct scull_dev *dev = (struct scull_dev *)filp->private_data;
+
+    printk(KERN_INFO "%s\n", __func__);
+
+    if (_IOC_TYPE(cmd) != SCULL_IOC_MAGIC) {
+        return -ENOTTY;
+    }
+    if (_IOC_NR(cmd) > SCULL_IOC_MAGIC) {
+        return -ENOTTY;
+    }
+
+    if (_IOC_DIR(cmd) & _IOC_READ) {
+        err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
+    } else if (_IOC_DIR(cmd) & _IOC_WRITE) {
+        err = !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
+    }
+    if (err) {
+        return -EFAULT;
+    }
+
+    switch (cmd) {
+        case SCULL_IOCRESET:
+            scull_trim(dev);
+            scull_quantum = SCULL_QUANTUM;
+            scull_qset = SCULL_QSET;
+            scull_trim(dev);
+            break;
+        case SCULL_IOCSQUANTUM:
+            if (!capable(CAP_SYS_ADMIN)) {
+                return -EPERM;
+            }
+            retval = copy_from_user(&scull_quantum, (void *)arg, _IOC_SIZE(cmd));
+            if (retval == 0) {
+                scull_trim(dev);
+            }
+            break;
+        case SCULL_IOCSQSET:
+            if (!capable(CAP_SYS_ADMIN)) {
+                return -EPERM;
+            }
+            retval = copy_from_user(&scull_qset, (void *)arg, _IOC_SIZE(cmd));
+            if (retval == 0) {
+                scull_trim(dev);
+            }
+            break;
+        case SCULL_IOCTQUANTUM:
+            if (!capable(CAP_SYS_ADMIN)) {
+                return -EPERM;
+            }
+            scull_quantum = arg;
+            scull_trim(dev);
+            break;
+        case SCULL_IOCTQSET:
+            if (!capable(CAP_SYS_ADMIN)) {
+                return -EPERM;
+            }
+            scull_qset = arg;
+            scull_trim(dev);
+            break;
+        case SCULL_IOCGQUANTUM:
+            tmp = scull_quantum;
+            retval = copy_to_user((void *)arg, &tmp, _IOC_SIZE(cmd));
+            break;
+        case SCULL_IOCGQSET:
+            retval = copy_to_user((void *)arg, &scull_qset, _IOC_SIZE(cmd));
+            break;
+        case SCULL_IOCQQUANTUM:
+            return scull_quantum;
+            break;
+        case SCULL_IOCQQSET:
+            return scull_qset;
+            break;
+        case SCULL_IOCXQUANTUM:
+            break;
+        case SCULL_IOCXQSET:
+            break;
+        case SCULL_IOCHQUANTUM:
+            break;
+        case SCULL_IOCHQSET:
+            break;
+        default:
+            return -ENOTTY;
+    }
+
+    return retval;
+}
+    
+
 struct file_operations scull_fops = {
     .owner = THIS_MODULE,
     .llseek = scull_llseek,
@@ -227,6 +328,8 @@ struct file_operations scull_fops = {
     .write  = scull_write,
     .open   = scull_open,
     .release = scull_release,
+    .unlocked_ioctl = scull_unlocked_ioctl,
+    .compat_ioctl = scull_compat_ioctl,
 };
 
 

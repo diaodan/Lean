@@ -2,6 +2,7 @@
 module="scull"
 device="scull"
 mode="644"
+/sbin/rmmod $module
 
 rm -f /dev/${deivce}[0-3]
 rm -f /dev/scull0
