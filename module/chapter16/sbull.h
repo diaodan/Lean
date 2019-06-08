@@ -1,6 +1,6 @@
 #ifndef __SBULL_H__
 
-#define INFO(fmt, args...) printk(KERN_INFO "file: %s func: %s line %d " fmt, \
+#define INFO(fmt, args...) printk(KERN_INFO "file: %s func: %s line %d " fmt"\n", \
                                 __FILE__, __func__, __LINE__, ##args)
 
 #define SBULL_MAJOR     0
