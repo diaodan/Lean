@@ -31,6 +31,7 @@ static int sbull_ioctl(struct block_device *bdev, fmode_t mode,
     INFO();
     switch (cmd) {
         case HDIO_GETGEO:
+            INFO();
             size = dev->size;
             geo.cylinders = (size & ~0x3f) >> 6;
             geo.heads = 4;
