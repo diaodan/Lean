@@ -29,6 +29,7 @@ __attribute__((section("__versions"))) = {
 	{ 0x4c4fef19, __VMLINUX_SYMBOL_STR(kernel_stack) },
 	{ 0x5134fed, __VMLINUX_SYMBOL_STR(blk_end_request) },
 	{ 0x77c56cb9, __VMLINUX_SYMBOL_STR(blk_fetch_request) },
+	{ 0x71de9b3f, __VMLINUX_SYMBOL_STR(_copy_to_user) },
 	{ 0x999e8297, __VMLINUX_SYMBOL_STR(vfree) },
 	{ 0x54cb7c91, __VMLINUX_SYMBOL_STR(add_disk) },
 	{ 0x28318305, __VMLINUX_SYMBOL_STR(snprintf) },
@@ -46,4 +47,4 @@ __attribute__((section(".modinfo"))) =
 "depends=";
 
 
-MODULE_INFO(srcversion, "F57723741C41B1FB3A1F70C");
+MODULE_INFO(srcversion, "2EE9CC6835E359213C074BE");

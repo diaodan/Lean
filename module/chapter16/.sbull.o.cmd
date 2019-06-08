@@ -835,6 +835,7 @@ deps_/root/git/Lean/module/chapter16/sbull.o := \
   include/linux/elevator.h \
   include/linux/hashtable.h \
   include/linux/hash.h \
+  /root/linux2/include/uapi/linux/hdreg.h \
   /root/git/Lean/module/chapter16/sbull.h \
 
 /root/git/Lean/module/chapter16/sbull.o: $(deps_/root/git/Lean/module/chapter16/sbull.o)

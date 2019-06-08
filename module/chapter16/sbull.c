@@ -4,6 +4,7 @@
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
 #include <linux/blkdev.h>
+#include <linux/hdreg.h>
 #include "sbull.h"
 
 MODULE_LICENSE("DUAL BSD/GPL");
@@ -23,8 +24,26 @@ static void sbull_release(struct gendisk *gen, fmode_t mode)
 static int sbull_ioctl(struct block_device *bdev, fmode_t mode,
                         unsigned int cmd, unsigned long arg)
 {
+    long size;
+    struct hd_geometry geo;
+    struct sbull_dev *dev = (struct sbull_dev *)bdev->bd_disk->private_data;
+
     INFO();
-    return 0;
+    switch (cmd) {
+        case HDIO_GETGEO:
+            size = dev->size;
+            geo.cylinders = (size & ~0x3f) >> 6;
+            geo.heads = 4;
+            geo.sectors = 16;
+            geo.start = 4;
+
+            if (copy_to_user((void __user *)arg, &geo, sizeof(geo))) {
+                return -EFAULT;
+            }
+            return 0;
+    }
+
+    return -ENOTTY;
 }
 
 static int sbull_media_changed(struct gendisk *gen)
