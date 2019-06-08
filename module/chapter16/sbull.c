@@ -54,6 +54,7 @@ static void sbull_transfer(struct sbull_dev *dev, unsigned long sector,
 {
     unsigned long offset = sector * KERNEL_SECTOR_SIZE;
     unsigned long nbytes = nsect * KERNEL_SECTOR_SIZE;
+    INFO("%lu, %lu", offset, nbytes);
 
     if ((offset + nbytes) > dev->size) {
         INFO("Beyond-end write (%ld %ld)", offset, nbytes);
