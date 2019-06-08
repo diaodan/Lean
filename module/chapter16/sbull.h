@@ -14,7 +14,7 @@
 static int sbull_major = 0;
 static int hardsect_size = 512;
 static int nsectors = 1024;
-static int ndevices = 4;
+static int ndevices = 1;
 
 enum {
     RM_SIMPLE   = 0,
