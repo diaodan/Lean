@@ -81,6 +81,7 @@ static void sbull_request(struct request_queue *q)
 
     INFO("req->cmd_flags %u", req->cmd_flags);
 
+    blk_end_request(req, 0, 0);
 
     /*
     while ((req = elv_next_request(q)) != NULL) {
