@@ -115,7 +115,9 @@ static void setup_device(struct sbull_dev *dev, int which)
     dev->gd->private_data = dev;
     snprintf(dev->gd->disk_name, 32, "sbull%c", which + 'a');
     set_capacity(dev->gd, nsectors * (hardsect_size / KERNEL_SECTOR_SIZE));
+    INFO();
     add_disk(dev->gd);
+    INFO();
     return;
 
   out_vfree:
