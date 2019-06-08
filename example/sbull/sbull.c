@@ -398,8 +398,6 @@ static void setup_device(struct sbull_dev *dev, int which)
 		vfree(dev->data);
 }
 
-
-
 static int __init sbull_init(void)
 {
 	int i;

@@ -34,6 +34,7 @@ struct sbull_dev {
     short users;
     short media_change;
     spinlock_t lock;
+    struct request_queue *queue;
     struct gendisk *gd;
 };
 
