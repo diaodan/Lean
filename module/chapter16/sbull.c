@@ -73,6 +73,15 @@ static void sbull_request(struct request_queue *q)
 
     INFO();
 
+
+    req = blk_fetch_request(q);
+    if (req == NULL) {
+        return ;
+    }
+
+    INFO("req->cmd_flags %u", req->cmd_flags);
+
+
     /*
     while ((req = elv_next_request(q)) != NULL) {
         struct sbull_dev *dev = req->rq_disk->private_data;
