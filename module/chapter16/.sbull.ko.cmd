@@ -1,0 +1,1 @@
+cmd_/root/git/Lean/module/chapter16/sbull.ko := ld -r -m elf_x86_64 -T /root/linux2/scripts/module-common.lds --build-id  -o /root/git/Lean/module/chapter16/sbull.ko /root/git/Lean/module/chapter16/sbull.o /root/git/Lean/module/chapter16/sbull.mod.o
