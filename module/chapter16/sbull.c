@@ -93,6 +93,34 @@ static void sbull_request(struct request_queue *q)
     }*/
 }
 
+static int sbull_xfer_bio(struct sbull_dev *dev, struct bio *bio)
+{
+    int i = 0;
+    struct bio_vec *bvec = NULL;
+    sector_t sector = bio->bi_sector;
+    INFO();
+
+    bio_for_each_segment(bvec, bio, i) {
+        char *buffer = __bio_kmap_atomic(bio, i);
+        INFO();
+        sbull_transfer(dev, sector, bio_sectors(bio),
+                        buffer, bio_data_dir(bio) == WRITE);
+        sector += bio_sectors(bio);
+        __bio_kunmap_atomic(bio);
+    }
+    return 0;
+}
+
+static void sbull_make_request(struct request_queue *q, struct bio *bio)
+{
+    struct sbull_dev *dev = (struct sbull_dev *)q->queuedata;
+    int status;
+    INFO();
+
+    status = sbull_xfer_bio(dev, bio);
+    bio_endio(bio, status);
+}
+
 static void setup_device(struct sbull_dev *dev, int which)
 {
     memset(dev, 0, sizeof(struct sbull_dev));
@@ -105,10 +133,22 @@ static void setup_device(struct sbull_dev *dev, int which)
 
     spin_lock_init(&dev->lock);
 
-    dev->queue = blk_init_queue(sbull_request, &dev->lock);
-    if (dev->queue == NULL) {
-        INFO("blk_init_queue failed");
-        goto out_vfree;
+    switch (request_mode) {
+        case RM_NOQUEUE:
+            dev->queue = blk_alloc_queue(GFP_KERNEL);
+            if (dev->queue == NULL) {
+                goto out_vfree;
+            }
+            blk_queue_make_request(dev->queue, sbull_make_request);
+            break;
+        case RM_SIMPLE:
+            dev->queue = blk_init_queue(sbull_request, &dev->lock);
+            if (dev->queue == NULL) {
+                INFO("blk_init_queue failed");
+                goto out_vfree;
+            }
+            break;
+
     }
     dev->queue->queuedata = dev;
 

@@ -25,13 +25,17 @@ __attribute__((section("__versions"))) = {
 	{ 0xef437f77, __VMLINUX_SYMBOL_STR(kmem_cache_alloc_trace) },
 	{ 0x451a419d, __VMLINUX_SYMBOL_STR(kmalloc_caches) },
 	{ 0x71a50dbc, __VMLINUX_SYMBOL_STR(register_blkdev) },
+	{ 0x81f73e63, __VMLINUX_SYMBOL_STR(bio_endio) },
+	{ 0x4c4fef19, __VMLINUX_SYMBOL_STR(kernel_stack) },
+	{ 0x69acdf38, __VMLINUX_SYMBOL_STR(memcpy) },
 	{ 0x5134fed, __VMLINUX_SYMBOL_STR(blk_end_request) },
 	{ 0x77c56cb9, __VMLINUX_SYMBOL_STR(blk_fetch_request) },
 	{ 0x999e8297, __VMLINUX_SYMBOL_STR(vfree) },
 	{ 0x54cb7c91, __VMLINUX_SYMBOL_STR(add_disk) },
 	{ 0x28318305, __VMLINUX_SYMBOL_STR(snprintf) },
 	{ 0x7090b635, __VMLINUX_SYMBOL_STR(alloc_disk) },
-	{ 0x2d3908af, __VMLINUX_SYMBOL_STR(blk_init_queue) },
+	{ 0x7658fa39, __VMLINUX_SYMBOL_STR(blk_queue_make_request) },
+	{ 0xeebf5568, __VMLINUX_SYMBOL_STR(blk_alloc_queue) },
 	{ 0xd6ee688f, __VMLINUX_SYMBOL_STR(vmalloc) },
 	{ 0x27e1a049, __VMLINUX_SYMBOL_STR(printk) },
 	{ 0xbdfb6dbb, __VMLINUX_SYMBOL_STR(__fentry__) },
@@ -43,4 +47,4 @@ __attribute__((section(".modinfo"))) =
 "depends=";
 
 
-MODULE_INFO(srcversion, "97343F6AE546F51E39AC37A");
+MODULE_INFO(srcversion, "EDA71C46F38E4DC01E057FC");
