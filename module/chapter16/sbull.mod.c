@@ -34,8 +34,7 @@ __attribute__((section("__versions"))) = {
 	{ 0x54cb7c91, __VMLINUX_SYMBOL_STR(add_disk) },
 	{ 0x28318305, __VMLINUX_SYMBOL_STR(snprintf) },
 	{ 0x7090b635, __VMLINUX_SYMBOL_STR(alloc_disk) },
-	{ 0x7658fa39, __VMLINUX_SYMBOL_STR(blk_queue_make_request) },
-	{ 0xeebf5568, __VMLINUX_SYMBOL_STR(blk_alloc_queue) },
+	{ 0x2d3908af, __VMLINUX_SYMBOL_STR(blk_init_queue) },
 	{ 0xd6ee688f, __VMLINUX_SYMBOL_STR(vmalloc) },
 	{ 0x27e1a049, __VMLINUX_SYMBOL_STR(printk) },
 	{ 0xbdfb6dbb, __VMLINUX_SYMBOL_STR(__fentry__) },
@@ -47,4 +46,4 @@ __attribute__((section(".modinfo"))) =
 "depends=";
 
 
-MODULE_INFO(srcversion, "FA14F42462D0FBDC5B133A5");
+MODULE_INFO(srcversion, "2CB56ECE8482BFE41E1980C");

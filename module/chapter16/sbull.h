@@ -22,7 +22,7 @@ enum {
     RM_NOQUEUE  = 2,
 };
 
-static int request_mode = RM_NOQUEUE;
+static int request_mode = RM_SIMPLE;
 
 #define SBULL_MINORS    16
 

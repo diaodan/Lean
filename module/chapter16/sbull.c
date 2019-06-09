@@ -267,7 +267,11 @@ static void sbull_exit(void)
             dev->gd = NULL;
         }
         if (dev->queue) {
-            blk_cleanup_queue(dev->queue);
+            if (request_mode == RM_NOQUEUE) {
+                blk_put_queue(dev->queue);
+            } else {
+                blk_cleanup_queue(dev->queue);
+            }
             dev->queue = NULL;
         }
         if (dev->data) {
