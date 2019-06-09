@@ -59,6 +59,22 @@ static int sbull_revalidate(struct gendisk *gen)
     return 0;
 }
 
+static int sbull_getgeo(struct block_device *bdev, struct hd_geometry *geo)
+{
+    long size;
+    struct sbull_dev *dev = (struct sbull_dev *)bdev->bd_disk->private_data;
+
+    INFO();
+
+    size = dev->size;
+    geo->cylinders = (size & ~0x3f) >> 6;
+    geo->heads = 4;
+    geo->sectors = 16;
+    geo->start = 4;
+    return 0;
+}
+
+
 
 static struct block_device_operations sbull_ops = {
     .owner          = THIS_MODULE,
@@ -68,6 +84,7 @@ static struct block_device_operations sbull_ops = {
     .revalidate_disk= sbull_revalidate,
     .ioctl          = sbull_ioctl,
     .compat_ioctl   = sbull_ioctl,
+    .getgeo         = sbull_getgeo,
 };
 
 static void sbull_transfer(struct sbull_dev *dev, unsigned long sector,
