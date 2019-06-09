@@ -67,6 +67,7 @@ static struct block_device_operations sbull_ops = {
     .media_changed  = sbull_media_changed,
     .revalidate_disk= sbull_revalidate,
     .ioctl          = sbull_ioctl,
+    .compat_ioctl   = sbull_ioctl,
 };
 
 static void sbull_transfer(struct sbull_dev *dev, unsigned long sector,
