@@ -87,7 +87,7 @@ static struct block_device_operations sbull_ops = {
     .getgeo         = sbull_getgeo,
 };
 
-static void sbull_transfer(struct sbull_dev *dev, unsigned long sector,
+static int sbull_transfer(struct sbull_dev *dev, unsigned long sector,
                     unsigned long nsect, char *buffer, int write)
 {
     unsigned long offset = sector * KERNEL_SECTOR_SIZE;
@@ -96,19 +96,23 @@ static void sbull_transfer(struct sbull_dev *dev, unsigned long sector,
 
     if ((offset + nbytes) > dev->size) {
         INFO("Beyond-end write (%ld %ld)", offset, nbytes);
-        return ;
+        return -EIO;
     }
     if (write) {
         memcpy(dev->data + offset, buffer, nbytes);
     } else {
         memcpy(buffer, dev->data + offset, nbytes);
     }
+    return 0;
 }
 
 
 static void sbull_request(struct request_queue *q)
 {
     struct request *req = NULL;
+    struct sbull_dev *dev = NULL;
+    unsigned int block, nsect;
+    int ret;
 
     INFO();
 
@@ -118,9 +122,17 @@ static void sbull_request(struct request_queue *q)
         return ;
     }
 
+    dev = req->rq_disk->private_data;
     INFO("req->cmd_flags %u", req->cmd_flags);
+    block = blk_rq_pos(req);
+    nsect = blk_rq_sectors(req);
+    ret = sbull_transfer(dev, block, nsect, req->buffer, rq_data_dir(req));
+    if (ret < 0) {
+        blk_end_request(req, -EIO, 0);
+        return ;
+    }
 
-    blk_end_request(req, 0, 0);
+    blk_end_request(req, 0, nsect * KERNEL_SECTOR_SIZE);
 
     /*
     while ((req = elv_next_request(q)) != NULL) {
