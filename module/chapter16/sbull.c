@@ -118,6 +118,7 @@ static void sbull_request(struct request_queue *q)
 
 
     while ((req = blk_fetch_request(q)) != NULL) {
+
         dev = req->rq_disk->private_data;
         INFO("req->cmd_flags %u", req->cmd_flags);
         block = blk_rq_pos(req);
@@ -128,7 +129,10 @@ static void sbull_request(struct request_queue *q)
             return ;
         }
 
+        
+        spin_unlock(q->queue_lock);
         blk_end_request(req, 0, nsect * KERNEL_SECTOR_SIZE);
+        spin_lock(q->queue_lock);
     }
 }
 
