@@ -169,6 +169,7 @@ static void setup_device(struct sbull_dev *dev, int which)
         INFO("vmalloc failed");
         return ;
     }
+    INFO();
 
     spin_lock_init(&dev->lock);
 
@@ -215,7 +216,6 @@ static void setup_device(struct sbull_dev *dev, int which)
         dev->data = NULL;
     }
 }
-
 
 static int sbull_init(void)
 {
