@@ -117,31 +117,19 @@ static void sbull_request(struct request_queue *q)
     INFO();
 
 
-    req = blk_fetch_request(q);
-    if (req == NULL) {
-        return ;
+    while ((req = blk_fetch_request(q)) != NULL) {
+        dev = req->rq_disk->private_data;
+        INFO("req->cmd_flags %u", req->cmd_flags);
+        block = blk_rq_pos(req);
+        nsect = blk_rq_sectors(req);
+        ret = sbull_transfer(dev, block, nsect, req->buffer, rq_data_dir(req));
+        if (ret < 0) {
+            blk_end_request(req, -EIO, 0);
+            return ;
+        }
+
+        blk_end_request(req, 0, nsect * KERNEL_SECTOR_SIZE);
     }
-
-    dev = req->rq_disk->private_data;
-    INFO("req->cmd_flags %u", req->cmd_flags);
-    block = blk_rq_pos(req);
-    nsect = blk_rq_sectors(req);
-    ret = sbull_transfer(dev, block, nsect, req->buffer, rq_data_dir(req));
-    if (ret < 0) {
-        blk_end_request(req, -EIO, 0);
-        return ;
-    }
-
-    blk_end_request(req, 0, nsect * KERNEL_SECTOR_SIZE);
-
-    /*
-    while ((req = elv_next_request(q)) != NULL) {
-        struct sbull_dev *dev = req->rq_disk->private_data;
-        
-        //sbull_transfer(dev, req->sector, req->current_nr_sectors,
-        //                req->buffer, rq_data_dir(req));
-        end_request(req, 1);
-    }*/
 }
 
 static int sbull_xfer_bio(struct sbull_dev *dev, struct bio *bio)
