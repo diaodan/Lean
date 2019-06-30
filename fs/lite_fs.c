@@ -9,6 +9,8 @@
 #include <linux/vfs.h>
 #include <asm/uaccess.h>
 
+MODULE_LICENSE("DUAL BSD/GPL");
+
 static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
 {
     INFO();
