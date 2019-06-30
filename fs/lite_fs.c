@@ -34,6 +34,7 @@ static struct file_system_type lite_fs_type = {
 static int __init init_lite_fs(void)
 {
     int err;
+    INFO();
     err = register_filesystem(&lite_fs_type);
     if (err) {
         goto out;
@@ -45,6 +46,7 @@ out:
 
 static void __exit exit_lite_fs(void)
 {
+    INFO();
     unregister_filesystem(&lite_fs_type);
 }
 
