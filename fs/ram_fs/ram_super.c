@@ -1,11 +1,14 @@
 #include "fs_head.h"
 
+MODULE_LICENSE("GPL");
+
 const struct file_operations simple_dir_operations = {
 
 };
 
 struct dentry * lite_ramfs_lookup(struct inode *dir, struct dentry *dentry, unsigned int flags)
 {
+    INFO();
     d_add(dentry, NULL);
     return NULL;
 }
@@ -14,6 +17,7 @@ static int lite_ramfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mo
 {
     struct inode * inode = lite_ramfs_get_inode(dir->i_sb, dir, mode, dev);
     int error = -ENOSPC;
+    INFO();
 
     if (inode) {
         d_instantiate(dentry, inode);
@@ -26,7 +30,10 @@ static int lite_ramfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mo
 
 static int lite_ramfs_mkdir(struct inode * dir, struct dentry * dentry, umode_t mode)
 {
-    int retval = lite_ramfs_mknod(dir, dentry, mode | S_IFDIR, 0);
+    int retval;
+
+    INFO();
+    retval = lite_ramfs_mknod(dir, dentry, mode | S_IFDIR, 0);
     if (!retval) {
         inc_nlink(dir);
     }
@@ -35,6 +42,7 @@ static int lite_ramfs_mkdir(struct inode * dir, struct dentry * dentry, umode_t 
 
 static int lite_ramfs_create(struct inode *dir, struct dentry *dentry, umode_t mode, bool excl)
 {
+    INFO();
     return lite_ramfs_mknod(dir, dentry, mode | S_IFREG, 0);
 }
 
@@ -50,6 +58,7 @@ struct inode *lite_ramfs_get_inode(struct super_block *sb,
                     const struct inode *dir, umode_t mode, dev_t dev)
 {
     struct inode * inode = new_inode(sb);
+    INFO();
 
     if (inode) {
         inode->i_ino = get_next_ino();
@@ -85,6 +94,7 @@ int lite_ramfs_fill_super(struct super_block *sb, void *data, int silent)
 {
     struct lite_ramfs_info *fsi;
     struct inode *inode;
+    INFO();
     
     fsi = kzalloc(sizeof(struct lite_ramfs_info), GFP_KERNEL);
     sb->s_fs_info = fsi;
@@ -111,6 +121,7 @@ int lite_ramfs_fill_super(struct super_block *sb, void *data, int silent)
 static struct dentry *lite_ramfs_mount(struct file_system_type *fs_type,
         int flags, const char *dev_name, void *data)
 {
+    INFO();
     return mount_nodev(fs_type, flags, data, lite_ramfs_fill_super);
 }
 
