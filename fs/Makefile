@@ -3,6 +3,7 @@ EXTRA_CFLAGS=-O -g
 
 ifneq ($(KERNELRELEASE),)
 	obj-m := lite_fs.o
+	lite_fs-objs := lite_super.o lite_inode.o
 else
 	KERNELDIR ?= /lib/modules/$(shell uname -r)/build/
 	PWD := $(shell pwd)

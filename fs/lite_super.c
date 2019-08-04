@@ -11,8 +11,32 @@
 
 MODULE_LICENSE("DUAL BSD/GPL");
 
+struct inode *lite_alloc_inode(struct super_block *sb)
+{
+    struct inode *in = NULL;
+    INFO();
+    in = (struct inode *)kmalloc(sizeof(struct inode), GFP_KERNEL);
+    if (in == NULL) {
+        return NULL;
+    }
+    return in;
+}
+
+void lite_destroy_inode(struct inode *inode)
+{
+    INFO();
+    kfree(inode);
+}
+
+static const struct super_operations lite_sop = {
+    .alloc_inode        = lite_alloc_inode,
+    .destroy_inode      = lite_destroy_inode,
+};
+
 static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
 {
+    struct dentry *root = NULL;
+    struct inode *inode = NULL;
     INFO();
     return 0;
 }

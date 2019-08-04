@@ -10,10 +10,14 @@
 #include <linux/fs.h>
 #include <linux/vfs.h>
 #include <asm/uaccess.h>
+#include <linux/gfp.h>
+#include <linux/quotaops.h>
 
 #define INFO(fmt, args...) printk(KERN_INFO "func: %s line: %d " fmt"\n", \
                                 __func__, __LINE__, ##args)
 
+struct inode *lite_alloc_inode(struct super_block *sb);
+void lite_destroy_inode(struct inode *inode);
 
 
 
