@@ -2,8 +2,7 @@
 EXTRA_CFLAGS=-O -g
 
 ifneq ($(KERNELRELEASE),)
-	obj-m := lite_ram_fs.o
-	lite_ram_fs-objs := ram_super.o
+	obj-m := hello.o
 else
 	KERNELDIR ?= /lib/modules/$(shell uname -r)/build/
 	PWD := $(shell pwd)
