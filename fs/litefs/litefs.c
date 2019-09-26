@@ -14,27 +14,27 @@ struct file_operations lite_fs_file_fops = {
 };
 
 
-int lite_fs_create(struct inode *dir_inode, struct dentry *dentry,
+static int lite_fs_create(struct inode *dir_inode, struct dentry *dentry,
                             int mode, struct nameidata *nd)
 {
     LOG_INFO();
     return 0;
 }
 
-struct dentry *lite_fs_lookup(struct inode *dir_inode, struct dentry *dentry,
+static struct dentry *lite_fs_lookup(struct inode *dir_inode, struct dentry *dentry,
                             struct nameidata *nd)
 {
     LOG_INFO();
     return NULL;
 }
 
-int lite_fs_mkdir(struct inode *dir_inode, struct dentry *dentry, int mode)
+static int lite_fs_mkdir(struct inode *dir_inode, struct dentry *dentry, int mode)
 {
     LOG_INFO();
     return 0;
 }
 
-int lite_fs_rm_dir(struct inode *dir_inode, struct dentry *dentry)
+static int lite_fs_rm_dir(struct inode *dir_inode, struct dentry *dentry)
 {
     LOG_INFO();
     return 0;
@@ -57,7 +57,7 @@ static void lite_fs_put_page(struct page *page)
     page_cache_release(page);
 }
 
-int lite_fs_readdir(struct file *filp, void *dirent, filldir_t filldir)
+static int lite_fs_readdir(struct file *filp, void *dirent, filldir_t filldir)
 {
     loff_t pos = filp->f_pos;
     struct inode *inode = filp->f_path.dentry->d_inode;

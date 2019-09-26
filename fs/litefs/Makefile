@@ -10,4 +10,4 @@ default:
 endif
 
 clean:
-	rm -f *.ko *.mod.* *.o *.order *.symvers
+	rm -rf *.ko *.mod.* *.o *.order *.symvers .*.ko.* .*.mod.* .*.*.cmd .tmp_versions
