@@ -1,5 +1,6 @@
+EXTRA_CFLAGS :=
 ifneq ($(KERNELRELEASE),)
-#litefs-objs := inode.o
+	litefs-objs := inode.o
 	obj-m := litefs.o
 else
 	KERNELDIR ?= /lib/modules/$(shell uname -r)/build/

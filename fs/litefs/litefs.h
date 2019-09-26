@@ -8,6 +8,7 @@
 #include <linux/blkdev.h>
 #include <linux/fs.h>
 #include <linux/buffer_head.h>
+#include <linux/mpage.h>
 
 #define LOG_INFO(fmt, args...)  printk(KERN_INFO "INFO: file %s, func %s, line %d: "fmt"\n", __FILE__,__func__, __LINE__, ##args)
 
@@ -33,7 +34,18 @@ struct lite_fs_super_info {
     __u64   s_first_data_bitmap;
     __u64   s_first_inode_block;
     __u64   s_first_data_block;
-    __u64   s_magic
+    __u64   s_magic;
+};
+
+#define LITE_FS_DIRENT_SIZE 64
+#define LITE_FS_NAME_SIZE   (LITE_FS_DIRENT_SIZE - 8 - 2 - 1 - 1)
+
+struct lite_fs_dirent {
+    __u64   inode;
+    __u16   rec_len;
+    __u8    name_len;
+    __u8    file_type;
+    char    name[LITE_FS_NAME_SIZE];
 };
 
 #endif //__LITEFS_H__

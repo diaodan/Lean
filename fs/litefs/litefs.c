@@ -40,9 +40,73 @@ int lite_fs_rm_dir(struct inode *dir_inode, struct dentry *dentry)
     return 0;
 }
 
+static struct page *lite_fs_get_page(struct inode *dir, unsigned long index)
+{
+    struct address_space *mapping = dir->i_mapping;
+    struct page *page = read_mapping_page(mapping, n, NULL);
+    if (!IS_ERR(page)) {
+        lock_page(page);
+        return page;
+    }
+    return -EIO;
+}
+
+static void lite_fs_put_page(struct page *page)
+{
+    unlock_page(page);
+    page_cache_release(page);
+}
+
 int lite_fs_readdir(struct file *filp, void *dirent, filldir_t filldir)
 {
+    loff_t pos = filp->f_pos;
+    struct inode *inode = filp->f_path.dentry->d_inode;
+    struct super_block *sb = inode->i_sb;
+    unsigned int offset = pos & ~PAGE_CACHE_MASK;
+    unsigned long n = pos >> PAGE_CACHE_SHIFT;
+    unsigned long npages = (inode->i_size + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
+
     LOG_INFO();
+
+    for ( ; n < npages; n ++, offset = 0) {
+        char *kaddr, *limit;
+        struct lite_fs_dirent  *de;
+        struct page *page = NULL;
+
+        page = lite_fs_get_page(inode, n);
+        if (IS_ERR(page)) {
+            LOG_ERR("LITE fs: bad page in %lu", inode->i_ino);
+            filp->f_pos += PAGE_CACHE_SIZE - offset;
+            return PTR_ERR(page);
+        }
+
+        kaddr = (char *)kmap(page);
+        de = (struct lite_fs_dirent *)(kaddr + offset);
+
+        for ( ; (char *)de < kaddr + PAGE_CACHE_SIZE; de = lite_fs_next_dentry(de)) {
+            if (de->rec_len == 0) {
+                LOG_ERR("LITE fs zero-length direntry entry");
+                return -EIO;
+            }
+
+            if (de->inode) {
+                unsigned char d_type = DT_REG;
+
+                offset = (char *)de - kaddr;
+                over = filldir(dirent, de->name, de->name_len, n << PAGE_CACHE_SHIFT | offset,
+                                de->inode, d_type);
+                if (over) {
+                    kumap(page);
+                    lite_fs_put_page(page);
+                    return 0;
+                }
+            }
+            filp->f_pos += de->rec_len;
+        }
+        kunmap(page);
+        lite_fs_put_page(page);
+    }
+
     return 0;
 }
 
@@ -102,14 +166,14 @@ bad_inode:
 
 static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
 {
-    LOG_INFO();
-
     struct buffer_head *bh = NULL;
     struct lite_fs_super_info *lsb = NULL;
     struct lite_fs_super_info *sbi = NULL;
     unsigned int blocksize;
     struct inode *root = NULL;
     int ret = 0;
+
+    LOG_INFO();
 
     sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
     if (!sbi) {
@@ -132,7 +196,7 @@ static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
     lsb->s_inodes_count = 100;
     lsb->s_free_blocks_count = lsb->s_blocks_count-1;
     lsb->s_free_inodes_count = lsb->s_inodes_count-1;
-    LOG_INFO("%lu  %lu", lsb->s_free_blocks_count, lsb->s_free_inodes_count);
+    LOG_INFO("%llu  %llu", lsb->s_free_blocks_count, lsb->s_free_inodes_count);
     lsb->s_first_inode_bitmap = INODE_BITMAP_BLOCK;
     lsb->s_first_data_bitmap = DATA_BITMAP_BLOCK;
     lsb->s_first_inode_block = FIRST_INODE_BLOCK;
