@@ -43,18 +43,23 @@ static int lite_fs_rm_dir(struct inode *dir_inode, struct dentry *dentry)
 static struct page *lite_fs_get_page(struct inode *dir, unsigned long index)
 {
     struct address_space *mapping = dir->i_mapping;
-    struct page *page = read_mapping_page(mapping, n, NULL);
+    struct page *page = read_mapping_page(mapping, index, NULL);
     if (!IS_ERR(page)) {
         lock_page(page);
         return page;
     }
-    return -EIO;
+    return page;
 }
 
 static void lite_fs_put_page(struct page *page)
 {
     unlock_page(page);
     page_cache_release(page);
+}
+
+struct lite_fs_dirent *lite_fs_next_dentry(struct lite_fs_dirent *de)
+{
+    return de ++;
 }
 
 static int lite_fs_readdir(struct file *filp, void *dirent, filldir_t filldir)
@@ -69,7 +74,7 @@ static int lite_fs_readdir(struct file *filp, void *dirent, filldir_t filldir)
     LOG_INFO();
 
     for ( ; n < npages; n ++, offset = 0) {
-        char *kaddr, *limit;
+        char *kaddr;
         struct lite_fs_dirent  *de;
         struct page *page = NULL;
 
@@ -91,12 +96,13 @@ static int lite_fs_readdir(struct file *filp, void *dirent, filldir_t filldir)
 
             if (de->inode) {
                 unsigned char d_type = DT_REG;
+                int over;
 
                 offset = (char *)de - kaddr;
                 over = filldir(dirent, de->name, de->name_len, n << PAGE_CACHE_SHIFT | offset,
                                 de->inode, d_type);
                 if (over) {
-                    kumap(page);
+                    kunmap(page);
                     lite_fs_put_page(page);
                     return 0;
                 }
@@ -163,6 +169,117 @@ bad_inode:
     return ERR_PTR(-EINVAL);
 }
 
+static int lite_fs_setup_root_dir(struct super_block *sb, struct lite_fs_super_info *lsb)
+{
+    struct buffer_head *bh = NULL;
+    struct buffer_head *dirbh = NULL;
+    struct lite_fs_inode *lite_inode = NULL;
+    char *kaddr = NULL;
+    unsigned int ret = 0;
+    unsigned int ino_block;
+    struct lite_fs_dirent *dirent = NULL;
+    unsigned int root_ino = LITE_FS_ROOT_INO;
+    LOG_INFO();
+
+    bh = sb_bread(sb, lsb->s_first_inode_bitmap);
+    if (bh == NULL) {
+        LOG_ERR("LITE fs :get first bitmap failed");
+        return -EIO;
+    }
+
+    kaddr = kmap(bh->b_page);
+    ret = lite_fs_set_bit(LITE_FS_ROOT_INO, (kaddr + bh_offset(bh)));
+    kunmap(bh->b_page);
+    if (ret) {
+        LOG_INFO("LITE fs root has been setup");
+        brelse(bh);
+        return 0;
+    }
+    LOG_INFO("LITE fs: root setup");
+
+    get_bh(bh);
+    lock_buffer(bh);
+    bh->b_end_io = end_buffer_write_sync;
+    submit_bh(WRITE, bh);
+    wait_on_buffer(bh);
+    brelse(bh);
+
+
+    ino_block = root_ino >> (LITE_FS_PER_BLOCK_INODE);
+    bh = sb_bread(sb, lsb->s_first_inode_block + ino_block);
+    if (bh == NULL) {
+        LOG_ERR("LITE fs :get inode block %llu failed", lsb->s_first_inode_block + ino_block);
+        return -EIO;
+    }
+
+    kaddr = kmap(bh->b_page);
+    lite_inode = (struct lite_fs_inode *)(kaddr + ((ino_block & (LITE_FS_PER_BLOCK_INODE -1)) << LITE_FS_INODE_SIZEBITS));
+    memset((char *)lite_inode, 0, LITE_FS_INODE_SIZE);
+    lite_inode->i_mode = (S_IFMT | S_IFREG);
+    lite_inode->i_link_count = 1;
+    lite_inode->i_block[0] = lsb->s_first_data_block;
+    kunmap(bh->b_page);
+
+    get_bh(bh);
+    lock_buffer(bh);
+    bh->b_end_io = end_buffer_write_sync;
+    submit_bh(WRITE, bh);
+    wait_on_buffer(bh);
+    brelse(bh);
+
+    dirbh = sb_bread(sb, lsb->s_first_data_bitmap);
+    if (dirbh == NULL) {
+        LOG_ERR("LITE fs :get data bitmap block %llu failed", lsb->s_first_data_bitmap);
+        return -EIO;
+    }
+
+    kaddr = kmap(dirbh->b_page);
+    lite_fs_set_bit(0, (kaddr + bh_offset(dirbh)));
+    kunmap(dirbh->b_page);
+
+    get_bh(dirbh);
+    lock_buffer(dirbh);
+    dirbh->b_end_io = end_buffer_write_sync;
+    submit_bh(WRITE, dirbh);
+    wait_on_buffer(dirbh);
+    brelse(dirbh);
+
+    dirbh = sb_bread(sb, lsb->s_first_data_block);
+    if (dirbh == NULL) {
+        LOG_ERR("LITE fs :get data block %llu failed", lsb->s_first_data_block);
+        return -EIO;
+    }
+
+    kaddr = kmap(dirbh->b_page);
+
+    dirent = (struct lite_fs_dirent *)kaddr;
+    dirent->inode = LITE_FS_ROOT_INO;
+    dirent->file_type = LITE_FS_DIR;
+    memset(dirent->name, 0, LITE_FS_NAME_SIZE);
+    memcpy(dirent->name, ".", strlen("."));
+    dirent->name_len = strlen(".");
+    dirent->rec_len = LITE_FS_DIRENT_SIZE;
+
+    dirent ++;
+    dirent->inode = LITE_FS_ROOT_INO;
+    dirent->file_type = LITE_FS_DIR;
+    memset(dirent->name, 0, LITE_FS_NAME_SIZE);
+    memcpy(dirent->name, "..", strlen(".."));
+    dirent->name_len = strlen("..");
+    dirent->rec_len = LITE_FS_DIRENT_SIZE;
+
+    kunmap(dirbh->b_page);
+    
+    get_bh(dirbh);
+    lock_buffer(dirbh);
+    dirbh->b_end_io = end_buffer_write_sync;
+    submit_bh(WRITE, dirbh);
+    wait_on_buffer(dirbh);
+    brelse(dirbh);
+    LOG_INFO("end setup root");
+
+    return 0;
+}
 
 static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
 {
@@ -209,6 +326,11 @@ static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
     bh->b_end_io = end_buffer_write_sync;
     submit_bh(WRITE, bh);
     wait_on_buffer(bh);
+
+    if ((ret = lite_fs_setup_root_dir(sb, lsb))) {
+        LOG_ERR();
+        return ret;
+    }
 
     sb->s_blocksize = LITE_BLOCKSIZE;
     sb->s_maxbytes = LITE_MAX_FILE_SIZE;
@@ -269,6 +391,7 @@ static int init_lite_fs(void)
 {
     int err;
 
+    printk(KERN_ALERT "init\n");
     LOG_INFO();
 
     err = register_filesystem(&lite_fs_type);
@@ -281,6 +404,7 @@ static int init_lite_fs(void)
 
 static void exit_lite_fs(void)
 {
+    printk(KERN_ALERT "exit\n");
     LOG_INFO();
     unregister_filesystem(&lite_fs_type);
 }

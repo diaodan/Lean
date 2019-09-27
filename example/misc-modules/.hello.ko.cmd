@@ -1,1 +1,1 @@
-cmd_/root/git/Learn/example/misc-modules/hello.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /root/git/Learn/example/misc-modules/hello.ko /root/git/Learn/example/misc-modules/hello.o /root/git/Learn/example/misc-modules/hello.mod.o
+cmd_/root/git/Learn/example/misc-modules/hello.ko := ld -r -m elf_x86_64 -T /root/src/linux3/scripts/module-common.lds --build-id -o /root/git/Learn/example/misc-modules/hello.ko /root/git/Learn/example/misc-modules/hello.o /root/git/Learn/example/misc-modules/hello.mod.o
