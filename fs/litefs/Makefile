@@ -3,7 +3,7 @@ ifneq ($(KERNELRELEASE),)
 	obj-m := litefs.o
 #	lite_fs-objs := inode.o litefs.o
 else
-	KERNELDIR ?= /lib/modules/$(shell uname -r)/build/
+	KERNELDIR ?= /lib/modules/2.6.32.71/build/
 	PWD := $(shell pwd)
 default:
 	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
