@@ -190,11 +190,11 @@ int lite_fs_setup_root_dir(struct super_block *sb, struct lite_fs_super_info *ls
     kaddr = kmap(bh->b_page);
     ret = lite_fs_set_bit(LITE_FS_ROOT_INO, (kaddr + bh_offset(bh)));
     kunmap(bh->b_page);
-    if (ret) {
-        LOG_INFO("LITE fs root has been setup");
-        brelse(bh);
-        return 0;
-    }
+    //if (ret) {
+    //    LOG_INFO("LITE fs root has been setup");
+    //    brelse(bh);
+    //    return 0;
+    //}
     LOG_INFO("LITE fs: root setup");
 
     get_bh(bh);
@@ -250,25 +250,33 @@ int lite_fs_setup_root_dir(struct super_block *sb, struct lite_fs_super_info *ls
         return -EIO;
     }
 
+    LOG_INFO("data block %llu", lsb->s_first_data_block);
     kaddr = kmap(dirbh->b_page);
 
     dirent = (struct lite_fs_dirent *)kaddr;
+    LOG_INFO("%s", dirent->name);
+
     dirent->inode = LITE_FS_ROOT_INO;
     dirent->file_type = LITE_FS_DIR;
     memset(dirent->name, 0, LITE_FS_NAME_SIZE);
     memcpy(dirent->name, ".", strlen("."));
     dirent->name_len = strlen(".");
     dirent->rec_len = LITE_FS_DIRENT_SIZE;
+    LOG_INFO("%s", dirent->name);
 
     dirent ++;
     dirent->inode = LITE_FS_ROOT_INO;
     dirent->file_type = LITE_FS_DIR;
+    LOG_INFO("%s", dirent->name);
+
     memset(dirent->name, 0, LITE_FS_NAME_SIZE);
     memcpy(dirent->name, "..", strlen(".."));
     dirent->name_len = strlen("..");
     dirent->rec_len = LITE_FS_DIRENT_SIZE;
+    LOG_INFO("%s", dirent->name);
 
     kunmap(dirbh->b_page);
+    LOG_INFO("b_blocknr %lu", dirbh->b_blocknr);
     
     get_bh(dirbh);
     lock_buffer(dirbh);
