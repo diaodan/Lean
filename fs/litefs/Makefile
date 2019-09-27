@@ -1,4 +1,4 @@
-EXTRA_CFLAGS :=
+EXTRA_CFLAGS := -g
 ifneq ($(KERNELRELEASE),)
 	obj-m := lite_fs.o
 	lite_fs-objs := inode.o litefs.o
