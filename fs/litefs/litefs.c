@@ -169,6 +169,7 @@ bad_inode:
     return ERR_PTR(-EINVAL);
 }
 
+
 int lite_fs_setup_root_dir(struct super_block *sb, struct lite_fs_super_info *lsb)
 {
     struct buffer_head *bh = NULL;
