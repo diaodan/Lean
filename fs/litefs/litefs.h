@@ -49,9 +49,21 @@ struct lite_fs_super_info {
 #define LITE_FS_DIRENT_SIZE 64
 #define LITE_FS_NAME_SIZE   (LITE_FS_DIRENT_SIZE - 8 - 2 - 1 - 1)
 
-enum lite_fs_type {
-    LITE_FS_DIR,
+//disk save file type
+enum {
+    LITE_FT_UNKNOWN,
+    LITE_FT_REG_FILE,
+    LITE_FT_DIR,
+    LITE_FT_CHRDEV,
+    LITE_FT_BKLDEV,
+    LITE_FT_FIFO,
+    LITE_FT_SOCK,
+    LITE_FT_SYMLINK,
+    LITE_FT_MAC
 };
+
+//disk to vfs translate
+
 
 
 #define LITE_FS_DIRENT_SIZE 64

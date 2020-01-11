@@ -63,19 +63,32 @@ static void lite_fs_put_page(struct page *page)
 
 struct lite_fs_dirent *lite_fs_next_dentry(struct lite_fs_dirent *de)
 {
-    return (char *)de + de->rec_len;;
+    return (struct lite_fs_dirent *)((char *)de + de->rec_len);
 }
 
 unsigned lite_last_byte(struct inode *inode, unsigned long n)
 {
     unsigned last_byte = inode->i_size;
 
-    last_byte -= n << PAGE_CACHE_SIZE;
+    last_byte -= n << PAGE_CACHE_SHIFT;
     if (last_byte > PAGE_CACHE_SIZE) {
         last_byte = PAGE_CACHE_SIZE;
     }
     return last_byte;
 }
+
+
+//disk type to vfs type translate
+static unsigned char lite_fs_type_table[LINK_MAX] = {
+    [LITE_FT_UNKNOWN]   = DT_UNKNOWN,
+    [LITE_FT_REG_FILE]  = DT_REG,
+    [LITE_FT_DIR]       = DT_DIR,
+    [LITE_FT_CHRDEV]    = DT_CHR,
+    [LITE_FT_BKLDEV]    = DT_BLK,
+    [LITE_FT_FIFO]      = DT_FIFO,
+    [LITE_FT_SOCK]      = DT_SOCK,
+    [LITE_FT_SYMLINK]   = DT_LNK,
+};
 
 static int lite_fs_readdir(struct file *filp, void *dirent, filldir_t filldir)
 {
@@ -120,9 +133,8 @@ static int lite_fs_readdir(struct file *filp, void *dirent, filldir_t filldir)
                 return -EIO;
             }
 
-            LOG_INFO("%x", de);
             if (de->inode) {
-                unsigned char d_type = DT_REG;
+                unsigned char d_type = lite_fs_type_table[de->file_type];
                 int over;
                 LOG_INFO("%d,%s", de->name_len, de->name);
 
@@ -258,11 +270,11 @@ struct inode * lite_fs_iget(struct super_block *sb, unsigned long ino)
     if (S_ISREG(inode->i_mode)) {
         inode->i_op = &lite_fs_file_inode_iops;
         inode->i_fop = &lite_fs_file_fops;
-        inode->i_mapping->a_ops = &lite_fs_aops;
+        inode->i_mapping->a_ops = (struct address_space_operations *)&lite_fs_aops;
     } else if (S_ISDIR(inode->i_mode)) {
         inode->i_op = &lite_fs_dir_inode_iops;
         inode->i_fop = &lite_fs_dir_fops;
-        inode->i_mapping->a_ops = &lite_fs_aops;
+        inode->i_mapping->a_ops = (struct address_space_operations *)&lite_fs_aops;
     } else {
         LOG_ERR("LITE fs: unknown file type");
         unlock_new_inode(inode);
@@ -367,7 +379,7 @@ int lite_fs_setup_root_dir(struct super_block *sb, struct lite_fs_super_info *ls
     kaddr = kmap(dirbh->b_page);
     dirent = (struct lite_fs_dirent *)((char *)kaddr + bh_offset(dirbh));
     dirent->inode = LITE_FS_ROOT_INO;
-    dirent->file_type = LITE_FS_DIR;
+    dirent->file_type = LITE_FT_DIR;
     memset(dirent->name, 0, LITE_FS_NAME_SIZE);
     memcpy(dirent->name, ".", strlen("."));
     dirent->name_len = strlen(".");
@@ -375,7 +387,7 @@ int lite_fs_setup_root_dir(struct super_block *sb, struct lite_fs_super_info *ls
 
     dirent ++;
     dirent->inode = LITE_FS_ROOT_INO;
-    dirent->file_type = LITE_FS_DIR;
+    dirent->file_type = LITE_FT_DIR;
 
     memset(dirent->name, 0, LITE_FS_NAME_SIZE);
     memcpy(dirent->name, "..", strlen(".."));
