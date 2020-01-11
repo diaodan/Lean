@@ -24,6 +24,14 @@
 #define LOG_ERR(fmt, args...)   printk(KERN_ERR "ERROR: "fmt"\n", ##args)
 #endif //LITE_DEBUG
 
+
+/*
+ *
+ * super block
+ *
+ */
+
+
 #define INODE_BITMAP_BLOCK  10
 #define DATA_BITMAP_BLOCK   20
 #define FIRST_INODE_BLOCK   40
@@ -46,8 +54,20 @@ struct lite_fs_super_info {
     __u64   s_magic;
 };
 
-#define LITE_FS_DIRENT_SIZE 64
-#define LITE_FS_NAME_SIZE   (LITE_FS_DIRENT_SIZE - 8 - 2 - 1 - 1)
+/*
+ *
+ * namei 
+ *
+ */
+
+extern struct inode_operations lite_fs_dir_inode_iops;
+
+/*
+ *
+ * directory
+ *
+ */
+
 
 //disk save file type
 enum {
@@ -62,10 +82,6 @@ enum {
     LITE_FT_MAC
 };
 
-//disk to vfs translate
-
-
-
 #define LITE_FS_DIRENT_SIZE 64
 #define LITE_FS_NAME_LEN (LITE_FS_DIRENT_SIZE - 8 - 2 - 1 - 1)
 
@@ -76,6 +92,16 @@ struct lite_fs_dirent {
     __u8    file_type;
     char    name[LITE_FS_NAME_LEN];
 };
+
+
+extern struct file_operations lite_fs_dir_fops;
+
+
+/*
+ *
+ * inode
+ *
+ */
 
 #define LITE_FS_ROOT_INO    1
 
@@ -102,6 +128,20 @@ struct lite_fs_inode_info {
     __u32   i_block[LITE_FS_N_BLOCKS];
     struct inode vfs_inode;
 };
+
+extern struct inode *lite_fs_iget(struct super_block *sb, unsigned long ino);
+
+
+/*
+ *
+ * regular file
+ *
+ */
+
+extern struct inode_operations lite_fs_file_inode_iops;
+extern struct file_operations lite_fs_file_fops;
+
+
 
 //extern struct address_space_operations lite_fs_aops;
 
