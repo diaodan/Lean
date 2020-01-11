@@ -166,8 +166,6 @@ static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
 
     blocksize = sb_set_blocksize(sb, 1024);
     LOG_INFO();
-    lsb->s_blocksize = blocksize;
-    lsb->s_blocks_per_page = PAGE_CACHE_SIZE / lsb->s_blocksize;
 
     if (!(bh = sb_bread(sb, SUPER_BLOCKS))) {
         LOG_ERR("unable to read superblock");
@@ -177,6 +175,8 @@ static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
 
     lsb = (struct lite_fs_super_info *)((char *)bh->b_data);
 
+    lsb->s_blocksize = blocksize;
+    lsb->s_blocks_per_page = PAGE_CACHE_SIZE / lsb->s_blocksize;
     //blocksize = 1k
     lsb->s_blocks_count = sb->s_bdev->bd_part->nr_sects >>(blocksize >> 9);
 
