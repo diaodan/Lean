@@ -70,11 +70,8 @@ static int lite_fs_readdir(struct file *filp, void *dirent, filldir_t filldir)
             filp->f_pos += PAGE_CACHE_SIZE - offset;
             return PTR_ERR(page);
         }
-        LOG_INFO();
 
         kaddr = (char *)kmap(page);
-        LOG_INFO();
-        
         de = (struct lite_fs_dirent *)(kaddr + offset);
 
         limit = kaddr + lite_last_byte(inode, n);
@@ -90,7 +87,6 @@ static int lite_fs_readdir(struct file *filp, void *dirent, filldir_t filldir)
             if (de->inode) {
                 unsigned char d_type = lite_fs_type_table[de->file_type];
                 int over;
-                LOG_INFO("%d,%s", de->name_len, de->name);
 
                 offset = (char *)de - kaddr;
                 over = filldir(dirent, de->name, de->name_len, n << PAGE_CACHE_SHIFT | offset,
@@ -100,7 +96,6 @@ static int lite_fs_readdir(struct file *filp, void *dirent, filldir_t filldir)
                     lite_fs_put_page(page);
                     return 0;
                 }
-                LOG_INFO();
             }
             filp->f_pos += de->rec_len;
         }
@@ -115,5 +110,4 @@ struct file_operations lite_fs_dir_fops = {
     .read       = generic_read_dir,
     .readdir    = lite_fs_readdir,
 };
-
 

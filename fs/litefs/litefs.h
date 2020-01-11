@@ -31,6 +31,11 @@
  *
  */
 
+#define INODE_BLOCK_RATIO      128  // 1/128 percent
+#define INODE_BLOCK_RATIO_BITS 7
+
+#define FIRST_USEABLE_BLOCK     4
+#define SUPER_BLOCKS            8
 
 #define INODE_BITMAP_BLOCK  10
 #define DATA_BITMAP_BLOCK   20
@@ -44,13 +49,21 @@
 
 struct lite_fs_super_info {
     __u64   s_blocks_count;
-    __u64   s_inodes_count;
-    __u64   s_free_blocks_count;
-    __u64   s_free_inodes_count;
-    __u64   s_first_inode_bitmap;
-    __u64   s_first_data_bitmap;
+
+    __u64   s_blocksize;
+    __u64   s_blocks_per_page;
+    __u64   s_inode_blocks;
+    __u64   s_inode_count;
     __u64   s_first_inode_block;
+
+    __u64   s_inode_bitmap_blocks;
+    __u64   s_first_inode_bitmap_block;
+
+    __u64   s_data_bitmap_blocks;
+    __u64   s_first_data_bitmap_block;
     __u64   s_first_data_block;
+    __u64   s_data_blocks;
+
     __u64   s_magic;
 };
 
@@ -81,6 +94,7 @@ enum {
     LITE_FT_SYMLINK,
     LITE_FT_MAC
 };
+
 
 #define LITE_FS_DIRENT_SIZE 64
 #define LITE_FS_NAME_LEN (LITE_FS_DIRENT_SIZE - 8 - 2 - 1 - 1)
