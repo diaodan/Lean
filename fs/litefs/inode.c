@@ -3,7 +3,22 @@
 static int lite_fs_get_block(struct inode *inode, sector_t iblock,
                         struct buffer_head *bh_result, int create)
 {
+    struct lite_fs_inode_info *inode_info = NULL;
+
     LOG_INFO();
+    inode_info = container_of(inode, struct lite_fs_inode_info, vfs_inode);
+
+    if (iblock < 0 || iblock >= LITE_FS_N_BLOCKS) {
+        LOG_ERR("invalid block num for inode %lu, block %lu", inode->i_ino, iblock);
+        return -EINVAL;
+    }
+    if (create) {
+        LOG_ERR("no support create");
+        return -EINVAL;
+    }
+
+    map_bh(bh_result, inode->i_sb, inode_info->i_block[iblock]);
+
     return 0;
 }
 
@@ -56,8 +71,4 @@ struct address_space_operations lite_fs_aops = {
     .write_begin    = lite_fs_write_begin,
     .write_end      = lite_fs_write_end,
 };
-
-
-
-
 
