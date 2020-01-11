@@ -50,6 +50,7 @@ struct lite_fs_super_info {
     __u64   s_inode_blocks;
     __u64   s_inode_count;
     __u64   s_first_inode_block;
+    __u64   s_free_inode_count;
 
     __u64   s_inode_bitmap_blocks;
     __u64   s_first_inode_bitmap_block;
@@ -60,6 +61,12 @@ struct lite_fs_super_info {
     __u64   s_data_blocks;
 
     __u64   s_magic;
+};
+
+struct lite_fs_vfs_super_info {
+    struct lite_fs_super_info disk_info;
+    spinlock_t inode_bitmap_lock;
+    spinlock_t vfs_super_lock;
 };
 
 /*
@@ -119,11 +126,12 @@ extern struct file_operations lite_fs_dir_fops;
 #define LITE_FS_INODE_SIZE      (1 << 9) //512 byte for a inode
 #define LITE_FS_N_BLOCKS        32
 #define LITE_FS_PER_BLOCK_INODE (LITE_BLOCKSIZE/LITE_FS_INODE_SIZE)
+#define LITE_FS_INO_OFFSET_IN_BLOCK(ino) ((ino) & (LITE_FS_PER_BLOCK_INODE - 1))
 
 struct lite_fs_inode {
+    __u64   i_size;
     __u16   i_mode;
     __u16   i_link_count;
-    __u64   i_size;
     __u32   i_atime;
     __u32   i_ctime;
     __u32   i_mtime;
@@ -166,5 +174,24 @@ extern struct file_operations lite_fs_file_fops;
                                     generic_find_next_zero_le_bit((unsigned long *)(addr), (size), (offset))
 #define lite_fs_find_next_bit(addr, size, offset) \
                                     generic_find_next_le_bit((unsigned long *)(addr), (size), (offset))
+
+#define lite_fs_set_bit_atomic(lock, nr, addr) \
+    ({ \
+        int ret;    \
+        spin_lock(lock);    \
+        ret = lite_fs_set_bit((nr), (unsigned long *)(addr)); \
+        spin_unlock(lock);  \
+        ret;    \
+     })
+#define lite_fs_clear_bit_atomic(lock, nr, addr)    \
+    ({  \
+        int ret;    \
+        spin_lock(lock);    \
+        ret = lite_fs_clear_bit((nr), (unsigned long *)(addr)); \
+        spin_unlock(lock);  \
+        ret;    \
+     })
+
+        
 
 #endif //__LITEFS_H__

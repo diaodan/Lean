@@ -150,19 +150,20 @@ static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
 {
     struct buffer_head *bh = NULL;
     struct lite_fs_super_info *lsb = NULL;
-    struct lite_fs_super_info *sbi = NULL;
+    struct lite_fs_vfs_super_info *vfs_sbi = NULL;
     unsigned int blocksize;
     struct inode *root = NULL;
     int ret = 0;
 
     LOG_INFO();
 
-    sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
-    if (!sbi) {
+    vfs_sbi = kzalloc(sizeof(*vfs_sbi), GFP_KERNEL);
+    if (!vfs_sbi) {
         return  -ENOMEM;
     }
 
-    sb->s_fs_info = sbi;
+    sb->s_fs_info = vfs_sbi;
+    spin_lock_init(&sb->s_fs_info.inode_bitmap_lock);
 
     blocksize = sb_set_blocksize(sb, 1024);
     LOG_INFO();
@@ -185,6 +186,7 @@ static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
      */
     lsb->s_inode_blocks = lsb->s_blocks_count >> INODE_BLOCK_RATIO_BITS;
     lsb->s_inode_count  = lsb->s_inode_blocks * (lsb->s_blocksize >> LITE_FS_INODE_SIZEBITS);
+    lsb->s_free_inode_count = lsb->s_inode_count;
     /*
      * inode bit map block
      */
@@ -215,7 +217,10 @@ static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
 
     LOG_INFO("super block  %lu", bh->b_blocknr);
 
-    *sbi = *lsb;
+    vfs_sbi->disk_info = *lsb;
+    spin_lock_init(&vfs_sbi->inode_bitmap_lock);
+    spin_lock_init(&vfs_sbi->vfs_super_lock);
+    
 
     get_bh(bh);
     lock_buffer(bh);
@@ -227,18 +232,18 @@ static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
 
 
     LOG_INFO("lite filesystem superblock information");
-    LOG_INFO("block count:              %llu", sbi->s_blocks_count);
-    LOG_INFO("blocksize:                %llu", sbi->s_blocksize);
-    LOG_INFO("block per page:           %llu", sbi->s_blocks_per_page);
-    LOG_INFO("inode blocks:             %llu", sbi->s_inode_blocks);
-    LOG_INFO("inode count:              %llu", sbi->s_inode_count);
-    LOG_INFO("inode bitmap blocks:      %llu", sbi->s_inode_bitmap_blocks);
-    LOG_INFO("first inode bitmap block: %llu", sbi->s_first_inode_bitmap_block);
-    LOG_INFO("first inode block:        %llu", sbi->s_first_inode_block);
-    LOG_INFO("data bitmap blocks:       %llu", sbi->s_data_bitmap_blocks);
-    LOG_INFO("first data bitmap block:  %llu", sbi->s_first_data_bitmap_block);
-    LOG_INFO("first data block:         %llu", sbi->s_first_data_block);
-    LOG_INFO("data blocks:              %llu", sbi->s_data_blocks);
+    LOG_INFO("block count:              %llu", vfs_sbi->disk_info.s_blocks_count);
+    LOG_INFO("blocksize:                %llu", vfs_sbi->disk_info.s_blocksize);
+    LOG_INFO("block per page:           %llu", vfs_sbi->disk_info.s_blocks_per_page);
+    LOG_INFO("inode blocks:             %llu", vfs_sbi->disk_info.s_inode_blocks);
+    LOG_INFO("inode count:              %llu", vfs_sbi->disk_info.s_inode_count);
+    LOG_INFO("inode bitmap blocks:      %llu", vfs_sbi->disk_info.s_inode_bitmap_blocks);
+    LOG_INFO("first inode bitmap block: %llu", vfs_sbi->disk_info.s_first_inode_bitmap_block);
+    LOG_INFO("first inode block:        %llu", vfs_sbi->disk_info.s_first_inode_block);
+    LOG_INFO("data bitmap blocks:       %llu", vfs_sbi->disk_info.s_data_bitmap_blocks);
+    LOG_INFO("first data bitmap block:  %llu", vfs_sbi->disk_info.s_first_data_bitmap_block);
+    LOG_INFO("first data block:         %llu", vfs_sbi->disk_info.s_first_data_block);
+    LOG_INFO("data blocks:              %llu", vfs_sbi->disk_info.s_data_blocks);
 
     if ((ret = lite_fs_setup_root_dir(sb, lsb))) {
         LOG_ERR();

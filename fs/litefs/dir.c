@@ -20,7 +20,7 @@ struct lite_fs_dirent *lite_fs_next_dentry(struct lite_fs_dirent *de)
     return (struct lite_fs_dirent *)((char *)de + de->rec_len);
 }
 
-unsigned lite_last_byte(struct inode *inode, unsigned long n)
+unsigned lite_fs_last_byte(struct inode *inode, unsigned long n)
 {
     unsigned last_byte = inode->i_size;
 
@@ -74,7 +74,7 @@ static int lite_fs_readdir(struct file *filp, void *dirent, filldir_t filldir)
         kaddr = (char *)kmap(page);
         de = (struct lite_fs_dirent *)(kaddr + offset);
 
-        limit = kaddr + lite_last_byte(inode, n);
+        limit = kaddr + lite_fs_last_byte(inode, n);
 
         for ( ; (char*)de < limit; de = lite_fs_next_dentry(de)) {
             if (de->rec_len == 0) {
