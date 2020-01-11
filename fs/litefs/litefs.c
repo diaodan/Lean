@@ -184,13 +184,15 @@ static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
      * inode blocks is 1/128 for all blocks
      */
     lsb->s_inode_blocks = lsb->s_blocks_count >> INODE_BLOCK_RATIO_BITS;
-    lsb->s_inode_count  = lsb->s_inode_blocks << (lsb->s_blocksize >> LITE_FS_INODE_SIZEBITS);
-    lsb->s_first_inode_block = FIRST_USEABLE_BLOCK + SUPER_BLOCKS;
+    lsb->s_inode_count  = lsb->s_inode_blocks * (lsb->s_blocksize >> LITE_FS_INODE_SIZEBITS);
+    //lsb->s_first_inode_block = FIRST_USEABLE_BLOCK + SUPER_BLOCKS;
+    lsb->s_first_inode_bitmap_block = FIRST_USEABLE_BLOCK + SUPER_BLOCKS;
     lsb->s_inode_bitmap_blocks = (lsb->s_inode_count + (lsb->s_blocksize << 4) - 1) / (lsb->s_blocksize << 4); 
 
-    lsb->s_first_inode_bitmap_block = (lsb->s_first_inode_block + lsb->s_inode_blocks
+    lsb->s_first_inode_block = (lsb->s_first_inode_bitmap_block + lsb->s_inode_bitmap_blocks
                                 + lsb->s_blocks_per_page - 1) & ~(lsb->s_blocks_per_page - 1);
-    lsb->s_data_blocks = lsb->s_blocks_count - (lsb->s_first_inode_bitmap_block + lsb->s_inode_bitmap_blocks);
+
+    lsb->s_data_blocks = lsb->s_blocks_count - (lsb->s_first_inode_block + lsb->s_inode_blocks);
     lsb->s_data_bitmap_blocks = (lsb->s_data_blocks + (lsb->s_blocksize << 4) -1 ) / (lsb->s_blocksize << 4);
     lsb->s_first_data_bitmap_block = (lsb->s_first_inode_bitmap_block + lsb->s_inode_bitmap_blocks
                                 + lsb->s_blocks_per_page -1) & ~(lsb->s_blocks_per_page - 1);

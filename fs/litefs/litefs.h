@@ -37,11 +37,6 @@
 #define FIRST_USEABLE_BLOCK     4
 #define SUPER_BLOCKS            8
 
-#define INODE_BITMAP_BLOCK  10
-#define DATA_BITMAP_BLOCK   20
-#define FIRST_INODE_BLOCK   40
-#define FIRST_DATA_BLOCK    50
-
 #define LITE_BLOCKBITS      10
 #define LITE_BLOCKSIZE      (1 << LITE_BLOCKBITS)
 #define LITE_MAX_FILE_SIZE  (1 << 30)
