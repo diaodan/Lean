@@ -165,6 +165,7 @@ static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
     sb->s_fs_info = sbi;
 
     blocksize = sb_set_blocksize(sb, 1024);
+    LOG_INFO();
     lsb->s_blocksize = blocksize;
     lsb->s_blocks_per_page = PAGE_CACHE_SIZE / lsb->s_blocksize;
 
@@ -172,6 +173,7 @@ static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
         LOG_ERR("unable to read superblock");
         goto failed_lsb;
     }
+    LOG_INFO();
 
     lsb = (struct lite_fs_super_info *)((char *)bh->b_data);
 
@@ -206,6 +208,8 @@ static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
     bh->b_end_io = end_buffer_write_sync;
     submit_bh(WRITE, bh);
     wait_on_buffer(bh);
+
+    LOG_INFO();
 
 
     LOG_INFO("lite filesystem superblock information");
