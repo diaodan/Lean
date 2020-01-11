@@ -232,9 +232,9 @@ static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
     LOG_INFO("block per page:           %llu", sbi->s_blocks_per_page);
     LOG_INFO("inode blocks:             %llu", sbi->s_inode_blocks);
     LOG_INFO("inode count:              %llu", sbi->s_inode_count);
-    LOG_INFO("first inode block:        %llu", sbi->s_first_inode_block);
     LOG_INFO("inode bitmap blocks:      %llu", sbi->s_inode_bitmap_blocks);
     LOG_INFO("first inode bitmap block: %llu", sbi->s_first_inode_bitmap_block);
+    LOG_INFO("first inode block:        %llu", sbi->s_first_inode_block);
     LOG_INFO("data bitmap blocks:       %llu", sbi->s_data_bitmap_blocks);
     LOG_INFO("first data bitmap block:  %llu", sbi->s_first_data_bitmap_block);
     LOG_INFO("first data block:         %llu", sbi->s_first_data_block);
