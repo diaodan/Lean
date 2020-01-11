@@ -2,6 +2,7 @@
 #define __LITEFS_H__
 
 #include <linux/module.h>
+#include <linux/moduleparam.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/bio.h>
@@ -10,10 +11,18 @@
 #include <linux/buffer_head.h>
 #include <linux/mpage.h>
 
+#define LITE_DBUG
 
-#define LOG_INFO(fmt, args...)  printk(KERN_INFO "INFO: file %s, func %s, line %d: "fmt"\n", __FILE__,__func__, __LINE__, ##args)
+#ifdef LITE_DBUG
+#define LOG_INFO(fmt, args...)  printk(KERN_INFO "INFO: func %s, line %d: "fmt"\n", __func__, __LINE__, ##args)
 
-#define LOG_ERR(fmt, args...)   printk(KERN_ERR "ERROR: file %s, func %s, line %d: "fmt"\n", __FILE__,__func__, __LINE__, ##args)
+#define LOG_ERR(fmt, args...)   printk(KERN_ERR "ERROR: func %s, line %d: "fmt"\n", __func__, __LINE__, ##args)
+#else
+
+#define LOG_INFO(fmt, args...)  printk(KERN_INFO "INFO: "fmt"\n", ##args)
+
+#define LOG_ERR(fmt, args...)   printk(KERN_ERR "ERROR: "fmt"\n", ##args)
+#endif //LITE_DEBUG
 
 #define INODE_BITMAP_BLOCK  10
 #define DATA_BITMAP_BLOCK   20
@@ -45,19 +54,22 @@ enum lite_fs_type {
 };
 
 
+#define LITE_FS_DIRENT_SIZE 64
+#define LITE_FS_NAME_LEN (LITE_FS_DIRENT_SIZE - 8 - 2 - 1 - 1)
+
 struct lite_fs_dirent {
     __u64   inode;
     __u16   rec_len;
     __u8    name_len;
     __u8    file_type;
-    char    name[LITE_FS_NAME_SIZE];
+    char    name[LITE_FS_NAME_LEN];
 };
 
-#define LITE_FS_ROOT_INO    0
+#define LITE_FS_ROOT_INO    1
 
 
 #define LITE_FS_INODE_SIZEBITS  9
-#define LITE_FS_INODE_SIZE      (1 << 9)
+#define LITE_FS_INODE_SIZE      (1 << 9) //512 byte for a inode
 #define LITE_FS_N_BLOCKS        32
 #define LITE_FS_PER_BLOCK_INODE (LITE_BLOCKSIZE/LITE_FS_INODE_SIZE)
 
@@ -74,6 +86,13 @@ struct lite_fs_inode {
     __u32   i_block[LITE_FS_N_BLOCKS];
 };
 
+struct lite_fs_inode_info {
+    __u32   i_block[LITE_FS_N_BLOCKS];
+    struct inode vfs_inode;
+};
+
+//extern struct address_space_operations lite_fs_aops;
+
 
 #include <asm-generic/bitops/le.h>
 
@@ -86,6 +105,5 @@ struct lite_fs_inode {
                                     generic_find_next_zero_le_bit((unsigned long *)(addr), (size), (offset))
 #define lite_fs_find_next_bit(addr, size, offset) \
                                     generic_find_next_le_bit((unsigned long *)(addr), (size), (offset))
-
 
 #endif //__LITEFS_H__
