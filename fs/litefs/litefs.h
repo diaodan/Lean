@@ -24,10 +24,18 @@
 #define LOG_ERR(fmt, args...)   printk(KERN_ERR "ERROR: "fmt"\n", ##args)
 #endif //LITE_DEBUG
 
-#define INODE_BITMAP_BLOCK  10
-#define DATA_BITMAP_BLOCK   20
-#define FIRST_INODE_BLOCK   40
-#define FIRST_DATA_BLOCK    50
+
+/*
+ *
+ * super block
+ *
+ */
+
+#define INODE_BLOCK_RATIO      128  // 1/128 percent
+#define INODE_BLOCK_RATIO_BITS 7
+
+#define FIRST_USEABLE_BLOCK     4
+#define SUPER_BLOCKS            8
 
 #define LITE_BLOCKBITS      10
 #define LITE_BLOCKSIZE      (1 << LITE_BLOCKBITS)
@@ -36,21 +44,57 @@
 
 struct lite_fs_super_info {
     __u64   s_blocks_count;
-    __u64   s_inodes_count;
-    __u64   s_free_blocks_count;
-    __u64   s_free_inodes_count;
-    __u64   s_first_inode_bitmap;
-    __u64   s_first_data_bitmap;
+
+    __u64   s_blocksize;
+    __u64   s_blocks_per_page;
+    __u64   s_inode_blocks;
+    __u64   s_inode_count;
     __u64   s_first_inode_block;
+    __u64   s_free_inode_count;
+
+    __u64   s_inode_bitmap_blocks;
+    __u64   s_first_inode_bitmap_block;
+
+    __u64   s_data_bitmap_blocks;
+    __u64   s_first_data_bitmap_block;
     __u64   s_first_data_block;
+    __u64   s_data_blocks;
+
     __u64   s_magic;
 };
 
-#define LITE_FS_DIRENT_SIZE 64
-#define LITE_FS_NAME_SIZE   (LITE_FS_DIRENT_SIZE - 8 - 2 - 1 - 1)
+struct lite_fs_vfs_super_info {
+    struct lite_fs_super_info disk_info;
+    spinlock_t inode_bitmap_lock;
+    spinlock_t vfs_super_lock;
+};
 
-enum lite_fs_type {
-    LITE_FS_DIR,
+/*
+ *
+ * namei 
+ *
+ */
+
+extern struct inode_operations lite_fs_dir_inode_iops;
+
+/*
+ *
+ * directory
+ *
+ */
+
+
+//disk save file type
+enum {
+    LITE_FT_UNKNOWN,
+    LITE_FT_REG_FILE,
+    LITE_FT_DIR,
+    LITE_FT_CHRDEV,
+    LITE_FT_BKLDEV,
+    LITE_FT_FIFO,
+    LITE_FT_SOCK,
+    LITE_FT_SYMLINK,
+    LITE_FT_MAC
 };
 
 
@@ -65,6 +109,16 @@ struct lite_fs_dirent {
     char    name[LITE_FS_NAME_LEN];
 };
 
+
+extern struct file_operations lite_fs_dir_fops;
+
+
+/*
+ *
+ * inode
+ *
+ */
+
 #define LITE_FS_ROOT_INO    1
 
 
@@ -72,11 +126,12 @@ struct lite_fs_dirent {
 #define LITE_FS_INODE_SIZE      (1 << 9) //512 byte for a inode
 #define LITE_FS_N_BLOCKS        32
 #define LITE_FS_PER_BLOCK_INODE (LITE_BLOCKSIZE/LITE_FS_INODE_SIZE)
+#define LITE_FS_INO_OFFSET_IN_BLOCK(ino) ((ino) & (LITE_FS_PER_BLOCK_INODE - 1))
 
 struct lite_fs_inode {
+    __u64   i_size;
     __u16   i_mode;
     __u16   i_link_count;
-    __u64   i_size;
     __u32   i_atime;
     __u32   i_ctime;
     __u32   i_mtime;
@@ -90,6 +145,20 @@ struct lite_fs_inode_info {
     __u32   i_block[LITE_FS_N_BLOCKS];
     struct inode vfs_inode;
 };
+
+extern struct inode *lite_fs_iget(struct super_block *sb, unsigned long ino);
+
+
+/*
+ *
+ * regular file
+ *
+ */
+
+extern struct inode_operations lite_fs_file_inode_iops;
+extern struct file_operations lite_fs_file_fops;
+
+
 
 //extern struct address_space_operations lite_fs_aops;
 
@@ -105,5 +174,24 @@ struct lite_fs_inode_info {
                                     generic_find_next_zero_le_bit((unsigned long *)(addr), (size), (offset))
 #define lite_fs_find_next_bit(addr, size, offset) \
                                     generic_find_next_le_bit((unsigned long *)(addr), (size), (offset))
+
+#define lite_fs_set_bit_atomic(lock, nr, addr) \
+    ({ \
+        int ret;    \
+        spin_lock(lock);    \
+        ret = lite_fs_set_bit((nr), (unsigned long *)(addr)); \
+        spin_unlock(lock);  \
+        ret;    \
+     })
+#define lite_fs_clear_bit_atomic(lock, nr, addr)    \
+    ({  \
+        int ret;    \
+        spin_lock(lock);    \
+        ret = lite_fs_clear_bit((nr), (unsigned long *)(addr)); \
+        spin_unlock(lock);  \
+        ret;    \
+     })
+
+        
 
 #endif //__LITEFS_H__

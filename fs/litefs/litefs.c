@@ -1,161 +1,7 @@
 #include "litefs.h"
 
 MODULE_LICENSE("Dual BSD/GPL");
-int test_blocknr=50;
-module_param(test_blocknr, int, 0);
 
-
-sector_t start_sect = 0;
-
-
-struct inode_operations lite_fs_file_inode_iops = {
-
-};
-
-struct file_operations lite_fs_file_fops = {
-    .read   = do_sync_read,
-    .write  = do_sync_write,
-    .open   = generic_file_open,
-    .llseek = generic_file_llseek,
-};
-
-
-static int lite_fs_create(struct inode *dir_inode, struct dentry *dentry,
-                            int mode, struct nameidata *nd)
-{
-    LOG_INFO();
-    return 0;
-}
-
-static struct dentry *lite_fs_lookup(struct inode *dir_inode, struct dentry *dentry,
-                            struct nameidata *nd)
-{
-    LOG_INFO();
-    return ERR_PTR(-EINVAL);;
-}
-
-static int lite_fs_mkdir(struct inode *dir_inode, struct dentry *dentry, int mode)
-{
-    LOG_INFO();
-    return 0;
-}
-
-static int lite_fs_rm_dir(struct inode *dir_inode, struct dentry *dentry)
-{
-    LOG_INFO();
-    return 0;
-}
-
-static struct page *lite_fs_get_page(struct inode *dir, unsigned long index)
-{
-    struct address_space *mapping = dir->i_mapping;
-    struct page *page = read_mapping_page(mapping, index, NULL);
-    if (!IS_ERR(page)) {
-        return page;
-    }
-    return page;
-}
-
-static void lite_fs_put_page(struct page *page)
-{
-    page_cache_release(page);
-}
-
-struct lite_fs_dirent *lite_fs_next_dentry(struct lite_fs_dirent *de)
-{
-    return (char *)de + de->rec_len;;
-}
-
-unsigned lite_last_byte(struct inode *inode, unsigned long n)
-{
-    unsigned last_byte = inode->i_size;
-
-    last_byte -= n << PAGE_CACHE_SIZE;
-    if (last_byte > PAGE_CACHE_SIZE) {
-        last_byte = PAGE_CACHE_SIZE;
-    }
-    return last_byte;
-}
-
-static int lite_fs_readdir(struct file *filp, void *dirent, filldir_t filldir)
-{
-    loff_t pos = filp->f_pos;
-    struct inode *inode = filp->f_path.dentry->d_inode;
-    //struct super_block *sb = inode->i_sb;
-    unsigned int offset = pos & ~PAGE_CACHE_MASK;
-    unsigned long n = pos >> PAGE_CACHE_SHIFT;
-    unsigned long npages = (inode->i_size + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
-
-    LOG_INFO();
-
-    if (pos > inode->i_size - LITE_FS_DIRENT_SIZE) {
-        return 0;
-    }
-
-    for ( ; n < npages; n ++, offset = 0) {
-        char *kaddr, *limit;
-        struct lite_fs_dirent  *de;
-        struct page *page = NULL;
-
-        page = lite_fs_get_page(inode, n);
-        if (IS_ERR(page)) {
-            LOG_ERR("LITE fs: bad page in %lu", inode->i_ino);
-            filp->f_pos += PAGE_CACHE_SIZE - offset;
-            return PTR_ERR(page);
-        }
-        LOG_INFO();
-
-        kaddr = (char *)kmap(page);
-        LOG_INFO();
-        
-        de = (struct lite_fs_dirent *)(kaddr + offset);
-
-        limit = kaddr + lite_last_byte(inode, n);
-
-        for ( ; (char*)de < limit; de = lite_fs_next_dentry(de)) {
-            if (de->rec_len == 0) {
-                LOG_ERR("LITE fs zero-length direntry entry");
-                kunmap(page);
-                lite_fs_put_page(page);
-                return -EIO;
-            }
-
-            LOG_INFO("%x", de);
-            if (de->inode) {
-                unsigned char d_type = DT_REG;
-                int over;
-                LOG_INFO("%d,%s", de->name_len, de->name);
-
-                offset = (char *)de - kaddr;
-                over = filldir(dirent, de->name, de->name_len, n << PAGE_CACHE_SHIFT | offset,
-                                de->inode, d_type);
-                if (over) {
-                    kunmap(page);
-                    lite_fs_put_page(page);
-                    return 0;
-                }
-                LOG_INFO();
-            }
-            filp->f_pos += de->rec_len;
-        }
-        kunmap(page);
-        lite_fs_put_page(page);
-    }
-    return 0;
-}
-
-struct inode_operations lite_fs_dir_inode_iops = {
-    .create     = lite_fs_create,
-    .lookup     = lite_fs_lookup,
-    .mkdir      = lite_fs_mkdir,
-    .rmdir      = lite_fs_rm_dir,
-};    
-
-struct file_operations lite_fs_dir_fops = {
-    .llseek     = generic_file_llseek,
-    .read       = generic_read_dir,
-    .readdir    = lite_fs_readdir,
-};
 
 static struct inode *lite_fs_alloc_inode(struct super_block *sb)
 {
@@ -184,100 +30,6 @@ static struct super_operations lite_fs_sops = {
 //    .write_inode    = lite_fs_write_inode,
 };
 
-struct lite_fs_inode *lite_fs_get_raw_inode(struct super_block *sb, unsigned long ino, struct buffer_head **buffer)
-{
-    struct buffer_head *bh = NULL;
-    __u64   block_nr;
-    int ino_offset_in_block = 0;
-    struct lite_fs_super_info *lsb = NULL;
-    char *kaddr;
-
-    LOG_INFO();
-
-    lsb = (struct lite_fs_super_info *)sb->s_fs_info;
-
-    block_nr = lsb->s_first_inode_block + (ino >> LITE_FS_PER_BLOCK_INODE);
-    ino_offset_in_block = (ino & (LITE_FS_PER_BLOCK_INODE - 1)) << LITE_FS_INODE_SIZEBITS;
-
-    bh = sb_bread(sb, block_nr);
-    if (bh == NULL) {
-        LOG_ERR("LITE fs: get block %llu failed", block_nr);
-        return ERR_PTR(-EIO);
-    }
-
-    *buffer = bh;
-    kaddr = kmap(bh->b_page);
-    return (struct lite_fs_inode *)(((char *)kaddr + bh_offset(bh)) + ino_offset_in_block);
-}
-
-static void lite_fs_put_raw_inode(struct buffer_head *buffer)
-{
-    LOG_INFO();
-    kunmap(buffer->b_page);
-    brelse(buffer);
-}
-
-
-extern struct address_sapce_operations lite_fs_aops;
-
-struct inode * lite_fs_iget(struct super_block *sb, unsigned long ino)
-{
-    struct inode *inode = NULL;
-    struct lite_fs_inode *raw_inode = NULL;
-    struct lite_fs_inode_info *lite_inode = NULL;
-    struct buffer_head *bh = NULL;
-    int ret = -EINVAL, i;
-
-    inode = iget_locked(sb, ino);
-    if (!inode) {
-        return ERR_PTR(-ENOMEM);
-    }
-    if (!(inode->i_state & I_NEW)) {
-        return inode;
-    }
-
-    raw_inode = lite_fs_get_raw_inode(inode->i_sb, ino, &bh);
-    if (IS_ERR(raw_inode)) {
-        ret = PTR_ERR(raw_inode);
-        goto bad_inode;
-    }
-
-    inode->i_mode = raw_inode->i_mode;
-    inode->i_nlink = raw_inode->i_link_count;
-    inode->i_size = raw_inode->i_size;
-    inode->i_blocks = raw_inode->i_blocks;
-
-    lite_inode = container_of(inode, struct lite_fs_inode_info, vfs_inode);
-
-    for (i = 0; i < LITE_FS_N_BLOCKS; i++) {
-        lite_inode->i_block[i] = raw_inode->i_block[i];
-    }
-
-    lite_fs_put_raw_inode(bh);
-
-    if (S_ISREG(inode->i_mode)) {
-        inode->i_op = &lite_fs_file_inode_iops;
-        inode->i_fop = &lite_fs_file_fops;
-        inode->i_mapping->a_ops = &lite_fs_aops;
-    } else if (S_ISDIR(inode->i_mode)) {
-        inode->i_op = &lite_fs_dir_inode_iops;
-        inode->i_fop = &lite_fs_dir_fops;
-        inode->i_mapping->a_ops = &lite_fs_aops;
-    } else {
-        LOG_ERR("LITE fs: unknown file type");
-        unlock_new_inode(inode);
-        iput(inode);
-        inode = NULL;
-        goto bad_inode;
-    }
-
-    unlock_new_inode(inode);
-    return inode;
-bad_inode:
-    return ERR_PTR(ret);
-}
-
-
 int lite_fs_setup_root_dir(struct super_block *sb, struct lite_fs_super_info *lsb)
 {
     struct buffer_head *bh = NULL;
@@ -291,7 +43,7 @@ int lite_fs_setup_root_dir(struct super_block *sb, struct lite_fs_super_info *ls
     int ino_offset_in_block;
     LOG_INFO();
 
-    bh = sb_bread(sb, lsb->s_first_inode_bitmap);
+    bh = sb_bread(sb, lsb->s_first_inode_bitmap_block);
     if (bh == NULL) {
         LOG_ERR("LITE fs :get first bitmap failed");
         return -EIO;
@@ -341,9 +93,9 @@ int lite_fs_setup_root_dir(struct super_block *sb, struct lite_fs_super_info *ls
     wait_on_buffer(bh);
     brelse(bh);
 
-    bh = sb_bread(sb, lsb->s_first_data_bitmap);
+    bh = sb_bread(sb, lsb->s_first_data_bitmap_block);
     if (bh == NULL) {
-        LOG_ERR("LITE fs :get data bitmap block %llu failed", lsb->s_first_data_bitmap);
+        LOG_ERR("LITE fs :get data bitmap block %llu failed", lsb->s_first_data_bitmap_block);
         return -EIO;
     }
 
@@ -367,17 +119,17 @@ int lite_fs_setup_root_dir(struct super_block *sb, struct lite_fs_super_info *ls
     kaddr = kmap(dirbh->b_page);
     dirent = (struct lite_fs_dirent *)((char *)kaddr + bh_offset(dirbh));
     dirent->inode = LITE_FS_ROOT_INO;
-    dirent->file_type = LITE_FS_DIR;
-    memset(dirent->name, 0, LITE_FS_NAME_SIZE);
+    dirent->file_type = LITE_FT_DIR;
+    memset(dirent->name, 0, LITE_FS_NAME_LEN);
     memcpy(dirent->name, ".", strlen("."));
     dirent->name_len = strlen(".");
     dirent->rec_len = LITE_FS_DIRENT_SIZE;
 
     dirent ++;
     dirent->inode = LITE_FS_ROOT_INO;
-    dirent->file_type = LITE_FS_DIR;
+    dirent->file_type = LITE_FT_DIR;
 
-    memset(dirent->name, 0, LITE_FS_NAME_SIZE);
+    memset(dirent->name, 0, LITE_FS_NAME_LEN);
     memcpy(dirent->name, "..", strlen(".."));
     dirent->name_len = strlen("..");
     dirent->rec_len = LITE_FS_DIRENT_SIZE;
@@ -398,46 +150,77 @@ static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
 {
     struct buffer_head *bh = NULL;
     struct lite_fs_super_info *lsb = NULL;
-    struct lite_fs_super_info *sbi = NULL;
+    struct lite_fs_vfs_super_info *vfs_sbi = NULL;
     unsigned int blocksize;
     struct inode *root = NULL;
     int ret = 0;
 
     LOG_INFO();
 
-    sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
-    if (!sbi) {
+    vfs_sbi = kzalloc(sizeof(*vfs_sbi), GFP_KERNEL);
+    if (!vfs_sbi) {
         return  -ENOMEM;
     }
 
-    sb->s_fs_info = sbi;
+    sb->s_fs_info = vfs_sbi;
+    spin_lock_init(&sb->s_fs_info.inode_bitmap_lock);
 
     blocksize = sb_set_blocksize(sb, 1024);
+    LOG_INFO();
 
-    if (!(bh = sb_bread(sb, 1))) {
+    if (!(bh = sb_bread(sb, SUPER_BLOCKS))) {
         LOG_ERR("unable to read superblock");
         goto failed_lsb;
     }
+    LOG_INFO();
 
     lsb = (struct lite_fs_super_info *)((char *)bh->b_data);
 
+    lsb->s_blocksize = blocksize;
+    lsb->s_blocks_per_page = PAGE_CACHE_SIZE / lsb->s_blocksize;
     //blocksize = 1k
     lsb->s_blocks_count = sb->s_bdev->bd_part->nr_sects >>(blocksize >> 9);
-    start_sect = sb->s_bdev->bd_part->start_sect;
 
-    lsb->s_inodes_count = 100;
-    lsb->s_free_blocks_count = lsb->s_blocks_count-1;
-    lsb->s_free_inodes_count = lsb->s_inodes_count-1;
-    LOG_INFO("%llu  %llu", lsb->s_free_blocks_count, lsb->s_free_inodes_count);
-    lsb->s_first_inode_bitmap = INODE_BITMAP_BLOCK;
-    lsb->s_first_data_bitmap = DATA_BITMAP_BLOCK;
-    lsb->s_first_inode_block = FIRST_INODE_BLOCK;
-    lsb->s_first_data_block = FIRST_DATA_BLOCK;
+    /*
+     * inode blocks is 1/128 for all blocks
+     */
+    lsb->s_inode_blocks = lsb->s_blocks_count >> INODE_BLOCK_RATIO_BITS;
+    lsb->s_inode_count  = lsb->s_inode_blocks * (lsb->s_blocksize >> LITE_FS_INODE_SIZEBITS);
+    lsb->s_free_inode_count = lsb->s_inode_count;
+    /*
+     * inode bit map block
+     */
+    lsb->s_first_inode_bitmap_block = FIRST_USEABLE_BLOCK + SUPER_BLOCKS;
+    lsb->s_inode_bitmap_blocks = (lsb->s_inode_count + (lsb->s_blocksize * 8) - 1) / (lsb->s_blocksize * 8); 
+
+    /*
+     * inode block
+     */
+    lsb->s_first_inode_block = (lsb->s_first_inode_bitmap_block + lsb->s_inode_bitmap_blocks
+                                + lsb->s_blocks_per_page - 1) & ~(lsb->s_blocks_per_page - 1);
+
+    /*
+     * data bit map block
+     */
+    lsb->s_data_blocks = lsb->s_blocks_count - (lsb->s_first_inode_block + lsb->s_inode_blocks);
+    lsb->s_data_bitmap_blocks = (lsb->s_data_blocks + (lsb->s_blocksize * 8) -1 ) / (lsb->s_blocksize * 8);
+    lsb->s_first_data_bitmap_block = (lsb->s_first_inode_block + lsb->s_inode_blocks
+                                + lsb->s_blocks_per_page -1) & ~(lsb->s_blocks_per_page - 1);
+
+    /*
+     * data block
+     */
+    lsb->s_first_data_block = (lsb->s_first_data_bitmap_block + lsb->s_data_bitmap_blocks
+                                + lsb->s_blocks_per_page -1) & ~(lsb->s_blocks_per_page - 1);
+    lsb->s_data_blocks = lsb->s_blocks_count - lsb->s_first_data_block;
     lsb->s_magic = LITE_MAGIC;
 
     LOG_INFO("super block  %lu", bh->b_blocknr);
 
-    *sbi = *lsb;
+    vfs_sbi->disk_info = *lsb;
+    spin_lock_init(&vfs_sbi->inode_bitmap_lock);
+    spin_lock_init(&vfs_sbi->vfs_super_lock);
+    
 
     get_bh(bh);
     lock_buffer(bh);
@@ -445,8 +228,22 @@ static int lite_fs_fill_super(struct super_block *sb, void *data, int silent)
     submit_bh(WRITE, bh);
     wait_on_buffer(bh);
 
+    LOG_INFO();
 
 
+    LOG_INFO("lite filesystem superblock information");
+    LOG_INFO("block count:              %llu", vfs_sbi->disk_info.s_blocks_count);
+    LOG_INFO("blocksize:                %llu", vfs_sbi->disk_info.s_blocksize);
+    LOG_INFO("block per page:           %llu", vfs_sbi->disk_info.s_blocks_per_page);
+    LOG_INFO("inode blocks:             %llu", vfs_sbi->disk_info.s_inode_blocks);
+    LOG_INFO("inode count:              %llu", vfs_sbi->disk_info.s_inode_count);
+    LOG_INFO("inode bitmap blocks:      %llu", vfs_sbi->disk_info.s_inode_bitmap_blocks);
+    LOG_INFO("first inode bitmap block: %llu", vfs_sbi->disk_info.s_first_inode_bitmap_block);
+    LOG_INFO("first inode block:        %llu", vfs_sbi->disk_info.s_first_inode_block);
+    LOG_INFO("data bitmap blocks:       %llu", vfs_sbi->disk_info.s_data_bitmap_blocks);
+    LOG_INFO("first data bitmap block:  %llu", vfs_sbi->disk_info.s_first_data_bitmap_block);
+    LOG_INFO("first data block:         %llu", vfs_sbi->disk_info.s_first_data_block);
+    LOG_INFO("data blocks:              %llu", vfs_sbi->disk_info.s_data_blocks);
 
     if ((ret = lite_fs_setup_root_dir(sb, lsb))) {
         LOG_ERR();
