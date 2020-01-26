@@ -35,7 +35,7 @@
 #define INODE_BLOCK_RATIO_BITS 7
 
 #define FIRST_USEABLE_BLOCK     4
-#define SUPER_BLOCKS            8
+#define SUPER_BLOCK             8
 
 #define LITE_BLOCKBITS      10
 #define LITE_BLOCKSIZE      (1 << LITE_BLOCKBITS)
@@ -44,6 +44,7 @@
 
 struct lite_fs_super_info {
     __u64   s_blocks_count;
+    __u64   s_bitmap_size;
 
     __u64   s_blocksize;
     __u64   s_blocks_per_page;
@@ -59,6 +60,7 @@ struct lite_fs_super_info {
     __u64   s_first_data_bitmap_block;
     __u64   s_first_data_block;
     __u64   s_data_blocks;
+    __u64   s_free_data_block_count;
 
     __u64   s_magic;
 };
@@ -75,7 +77,11 @@ struct lite_fs_vfs_super_info {
  *
  */
 
+struct lite_fs_dirent;
+
 extern struct inode_operations lite_fs_dir_inode_iops;
+extern int lite_fs_match(int namelen, const char *name, struct lite_fs_dirent *de);
+extern int lite_fs_commit_chunk(struct page *page, loff_t pos, unsigned len);
 
 /*
  *
@@ -94,7 +100,7 @@ enum {
     LITE_FT_FIFO,
     LITE_FT_SOCK,
     LITE_FT_SYMLINK,
-    LITE_FT_MAC
+    LITE_FT_MAX
 };
 
 
@@ -112,12 +118,23 @@ struct lite_fs_dirent {
 
 extern struct file_operations lite_fs_dir_fops;
 
+extern struct page *lite_fs_get_page(struct inode *dir, unsigned long index);
+extern void lite_fs_put_page(struct page *page);
+extern unsigned lite_fs_last_byte(struct inode *inode, unsigned long n);
+extern void lite_fs_set_dirent_type(struct lite_fs_dirent *dirent, struct inode *inode);
+extern struct lite_fs_dirent *lite_fs_next_dentry(struct lite_fs_dirent *de);
+extern ino_t lite_fs_inode_by_name(struct inode *dir, struct qstr *child);
+extern int lite_fs_delete_entry(struct lite_fs_dirent *dirent, struct page *page);
+extern struct lite_fs_dirent *lite_fs_find_entry(struct inode *dir_inode, struct qstr *child, struct page **res_page);
+
 
 /*
  *
  * inode
  *
  */
+
+#define LITE_FS_LINK_MAX    1000
 
 #define LITE_FS_ROOT_INO    1
 
@@ -141,13 +158,19 @@ struct lite_fs_inode {
     __u32   i_block[LITE_FS_N_BLOCKS];
 };
 
-struct lite_fs_inode_info {
+struct lite_fs_vfs_inode_info {
     __u32   i_block[LITE_FS_N_BLOCKS];
     struct inode vfs_inode;
 };
 
 extern struct inode *lite_fs_iget(struct super_block *sb, unsigned long ino);
-
+extern struct address_space_operations lite_fs_aops;
+extern int lite_fs_get_block(struct inode *inode, sector_t iblock, struct buffer_head *bh_result, int create);
+extern struct lite_fs_inode *lite_fs_get_raw_inode(struct super_block *sb, unsigned long ino, struct buffer_head **buffer);
+extern int __lite_fs_write_begin(struct file *, struct address_space *, loff_t, 
+                                unsigned , unsigned , struct page **, void **);
+extern int lite_fs_write_inode(struct inode *inode, int do_sync);
+extern void lite_fs_delete_inode(struct inode *inode);
 
 /*
  *
