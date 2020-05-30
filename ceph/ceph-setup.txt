@@ -1,0 +1,59 @@
+#set up mon
+#install ntp, stop firewalld on all nodes
+
+#hostname=node1
+#host-ip=192.168.1.1
+#fsid=xxxx-xxxx
+
+#create keyring
+
+ceph-authtool --create-keyring /tmp/ceph.mon.keyring --gen-key -n mon. --cap mon 'allow *'
+ceph-authtool --create-keyring /etc/ceph/ceph.client.admin.keyring --gen-key -n client.admin --set-uid=0 --cap mon 'allow *' --cap osd 'allow *' --cap mds 'allow'
+ceph-authtool /tmp/ceph.mon.keyring --import-keyring /etc/ceph/ceph.client.admin.keyring
+
+#create pool
+
+monmaptool --create --add {hostname} {host-ip} --fsid {fsid} /tmp/monmap
+
+#create a default data directory on monitor host
+
+mkdir -p /var/lib/ceph/mon/{cluster-name}-{hostname}
+
+#populate the monitor daemon with the monitor map and keyring
+ceph-mon [--cluster {cluster-name}] --mkfs -i {hostname} --monmap /tmp/monmap --keyring /tmp/ceph.mon.keyring
+
+#set ceph configuration file  /etc/ceph/ceph.conf
+
+[global]
+fsid={cluster-id}
+mon initial members = {hostname}
+mon host = {host-ip}
+
+
+#start mon  systemctl start ceph-mon@hostname
+
+#copy ceph.conf and ceph.client.admin.keyring to all node
+
+#set up osd
+#get osd id
+#on mon node
+>uuidgen
+>"osd uuid xxxx-xxxx"
+>ceph osd create xxxx-xxxx
+>"osd id"
+
+#osd_uuid="osd uuid xxxx-xxxx"
+#id="osd id"
+#on osd node
+mkdir -p /var/lib/ceph/osd/ceph-{id}
+mkfs.btrfs /dev/xxx
+mount /dev/xxx /var/lib/ceph/osd/ceph-{id}
+ceph-osd -i {id} --mkfs --mkkey --osd-uuid {osd_uuid}
+
+#register osd key
+#on osd node
+ceph auth add osd.{id} osd 'allow *' mon 'allow profile osd' -i /var/lib/ceph/osd/ceph-{id}/keyring
+
+#start osd
+systemctl start ceph-osd@{id}
+
