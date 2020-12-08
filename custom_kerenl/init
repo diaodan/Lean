@@ -9,6 +9,7 @@ mount -n -t proc proc /proc
 mount -n -t sysfs sysfs /sys
 mount -n -t ramfs ramfs /run
 
+/lib/systemd/systemd-udevd --daemon
 udevd --daemon
 udevadm trigger --action=add
 udevadm settle
@@ -37,4 +38,5 @@ mount -n --move /proc ${ROOTMNT}/proc
 mount -n --move /sys ${ROOTMNT}/sys
 
 switch_root ${ROOTMNT} /sbin/init
-
+echo "fail switch root"
+exec /bin/bash
